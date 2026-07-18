@@ -78,7 +78,7 @@ class _MatchInfoScreenState extends State<MatchInfoScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: _PremiumBottomBar(controller: c),
+      bottomNavigationBar: PremiumBottomBar(controller: c),
       body: ResponsiveCenter(
         child: ListView(
           padding: EdgeInsets.fromLTRB(
@@ -604,13 +604,14 @@ class PremiumSlotBadge extends StatelessWidget {
   }
 }
 
-class _PremiumBottomBar extends StatelessWidget {
+class PremiumBottomBar extends StatelessWidget {
   final MatchInfoController controller;
-  const _PremiumBottomBar({required this.controller});
+  const PremiumBottomBar({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     final session = SessionService.to;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return SafeArea(
       child: Container(

@@ -50,6 +50,7 @@ class PremiumButton extends StatefulWidget {
     this.icon,
     this.isLoading = false,
     this.isFullWidth = false,
+    this.customColor,
   }) : variant = PremiumButtonVariant.secondary,
 
   
@@ -62,6 +63,7 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.outlined,
+    this.customColor,
 
   
   const PremiumButton.text({
@@ -73,6 +75,7 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.text,
+    this.customColor,
 
 
   @override
