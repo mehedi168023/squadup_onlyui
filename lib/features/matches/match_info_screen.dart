@@ -343,6 +343,7 @@ class _PremiumSegmentedTabs extends StatelessWidget {
 class _PremiumRulesContent extends StatelessWidget {
   final MatchInfoController controller;
   const _PremiumRulesContent({required this.controller});
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
   @override
   Widget build(BuildContext context) {
@@ -423,6 +424,7 @@ class _PremiumRulesContent extends StatelessWidget {
 
 class _PremiumParticipantsContent extends StatelessWidget {
   final FfMatch match;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
   const _PremiumParticipantsContent({required this.match});
 
   @override
@@ -481,6 +483,7 @@ class _PremiumParticipantsContent extends StatelessWidget {
 }
 
 class _PremiumIosGroup extends StatelessWidget {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
   final List<_PremiumDetailRow> rows;
   const _PremiumIosGroup({required this.rows});
 
