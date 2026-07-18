@@ -263,6 +263,7 @@ class _PremiumHeaderCard extends StatelessWidget {
 class _PremiumSegmentedTabs extends StatelessWidget {
   final MatchInfoController controller;
   const _PremiumSegmentedTabs({required this.controller});
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
   @override
   Widget build(BuildContext context) {
