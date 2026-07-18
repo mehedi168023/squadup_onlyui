@@ -39,7 +39,7 @@ class PremiumButton extends StatefulWidget {
     this.icon,
     this.isLoading = false,
     this.isFullWidth = false,
-  }) : variant = PremiumButtonVariant.primary,
+  }) : variant = PremiumButtonVariant.primary;
 
   
   const PremiumButton.secondary({
