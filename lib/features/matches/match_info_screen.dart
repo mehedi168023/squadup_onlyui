@@ -12,7 +12,6 @@ import '../../design_system/tokens/premium_radius.dart';
 import '../../design_system/components/cards/premium_card.dart';
 import '../../design_system/components/buttons/premium_button.dart';
 import '../../app/widgets/premium_back_button.dart';
-import '../../design_system/tokens/premium_shadows.dart';
 import '../../app/widgets/responsive.dart';
 
 class MatchInfoController extends GetxController {
@@ -64,6 +63,7 @@ class _MatchInfoScreenState extends State<MatchInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
       backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
@@ -78,7 +78,7 @@ class _MatchInfoScreenState extends State<MatchInfoScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: PremiumBottomBar(controller: c),
+      bottomNavigationBar: _PremiumBottomBar(controller: c),
       body: ResponsiveCenter(
         child: ListView(
           padding: EdgeInsets.fromLTRB(
@@ -109,6 +109,7 @@ class _PremiumHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match = controller.match;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return PremiumCard(
       padding: PremiumSpacing.card,
@@ -228,6 +229,7 @@ class _PremiumHeaderCard extends StatelessWidget {
     String label,
     double value,
   ) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -265,6 +267,7 @@ class _PremiumSegmentedTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
       height: 48,
@@ -346,6 +349,7 @@ class _PremiumRulesContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match = controller.match;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,7 +366,7 @@ class _PremiumRulesContent extends StatelessWidget {
         _PremiumIosGroup(rows: [
           _PremiumDetailRow(label: 'Match ID', value: '#${match.id}'),
           _PremiumDetailRow(label: 'Mode', value: match.modeLabel),
-          _PremiumDetailRow(label: 'Map', value: match.map),
+          _PremiumDetailRow(label: 'Map', value: match.mapName),
           _PremiumDetailRow(
             label: 'Start Time',
             value: fullDateWeekday(match.startTime),
@@ -384,7 +388,7 @@ class _PremiumRulesContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final rule in match.rules.split("\n"))
+              for (final rule in match.rules)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Row(
@@ -426,6 +430,7 @@ class _PremiumParticipantsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,9 +473,9 @@ class _PremiumParticipantsContent extends StatelessWidget {
             children: match.participants.asMap().entries.map((entry) {
               final i = entry.key;
               final p = entry.value;
-              return PremiumSlotBadge(
+              return _PremiumSlotBadge(
                 slot: i + 1,
-                name: p.ign,
+                name: p.name,
               );
             }).toList(),
           ),
@@ -485,6 +490,7 @@ class _PremiumIosGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return PremiumCard(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -518,6 +524,7 @@ class _PremiumDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -551,18 +558,18 @@ class _PremiumDetailRow extends StatelessWidget {
   }
 }
 
-class PremiumSlotBadge extends StatelessWidget {
+class _PremiumSlotBadge extends StatelessWidget {
   final int slot;
   final String name;
   
-  const PremiumSlotBadge({
+  const _PremiumSlotBadge({
     required this.slot,
     required this.name,
   });
 
   @override
   Widget build(BuildContext context) {
-        final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -604,9 +611,9 @@ class PremiumSlotBadge extends StatelessWidget {
   }
 }
 
-class PremiumBottomBar extends StatelessWidget {
+class _PremiumBottomBar extends StatelessWidget {
   final MatchInfoController controller;
-  const PremiumBottomBar({required this.controller});
+  const _PremiumBottomBar({required this.controller});
 
   @override
   Widget build(BuildContext context) {
