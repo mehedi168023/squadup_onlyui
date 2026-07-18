@@ -367,7 +367,7 @@ class _PremiumRulesContent extends StatelessWidget {
         _PremiumIosGroup(rows: [
           _PremiumDetailRow(label: 'Match ID', value: '#${match.id}'),
           _PremiumDetailRow(label: 'Mode', value: match.modeLabel),
-          _PremiumDetailRow(label: 'Map', value: match.mapName),
+          _PremiumDetailRow(label: 'Map', value: match.map),
           _PremiumDetailRow(
             label: 'Start Time',
             value: fullDateWeekday(match.startTime),
@@ -389,7 +389,7 @@ class _PremiumRulesContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final rule in match.rules)
+              for (final rule in match.rules.split("\n"))
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Row(
@@ -474,9 +474,9 @@ class _PremiumParticipantsContent extends StatelessWidget {
             children: match.participants.asMap().entries.map((entry) {
               final i = entry.key;
               final p = entry.value;
-              return _PremiumSlotBadge(
+              return PremiumSlotBadge(
                 slot: i + 1,
-                name: p.name,
+                name: p.ign,
               );
             }).toList(),
           ),
@@ -559,11 +559,11 @@ class _PremiumDetailRow extends StatelessWidget {
   }
 }
 
-class _PremiumSlotBadge extends StatelessWidget {
+class PremiumSlotBadge extends StatelessWidget {
   final int slot;
   final String name;
   
-  const _PremiumSlotBadge({
+  const PremiumSlotBadge({
     required this.slot,
     required this.name,
   });
@@ -617,6 +617,7 @@ class _PremiumBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final session = SessionService.to;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     

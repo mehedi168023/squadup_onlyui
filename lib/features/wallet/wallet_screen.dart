@@ -270,7 +270,7 @@ class WalletScreen extends StatelessWidget {
     List<String> steps,
   ) {
     return PremiumCard(
-      onTap: () => AppSheets.showHowToGuide(context, title, steps),
+      onTap: () => AppSheet.show(context, title, steps),
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [

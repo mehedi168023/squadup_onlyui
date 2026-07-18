@@ -86,7 +86,7 @@ class _MatchListScreenState extends State<MatchListScreen> {
                       ),
                     );
                   },
-                  child: _PremiumMatchListCard(
+                  child: PremiumMatchListCard(
                     match: list[i],
                     onTap: () => Get.toNamed(AppRoutes.matchInfo, arguments: list[i]),
                   ),

@@ -260,7 +260,7 @@ class MatchRulesScreen extends StatelessWidget {
         color: context.card,
         borderRadius: BorderRadius.circular(PremiumRadius.md),
         border: Border.all(color: context.border),
-        boxShadow: context.shadowCard,
+        boxShadow: PremiumShadows.primaryGlow,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
