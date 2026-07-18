@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($f=\\(Get-Command flutter -ErrorAction SilentlyContinue\\); if\\($f\\){\"flutter: $\\($f.Source\\)\"} else {\"flutter not on PATH\"})",
+      "PowerShell(flutter analyze *)",
+      "Bash(cd /c/Users/Victus/Desktop/flutterapp/squadup/android/app/src/main/res)",
+      "Bash(ls -d drawable*)",
+      "Bash(find . -iname \"ic_notification*\")",
+      "Bash(ls raw *)"
+    ]
+  }
+}
