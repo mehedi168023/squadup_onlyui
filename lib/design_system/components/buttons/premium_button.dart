@@ -31,6 +31,7 @@ class PremiumButton extends StatefulWidget {
   });
   
   const PremiumButton.primary({
+    this.customColor,
     super.key,
     required this.text,
     this.onPressed,

@@ -360,7 +360,7 @@ class _PremiumBalanceHero extends StatelessWidget {
                         );
                       },
                       child: Text(
-                        taka(wallet.balance),
+                        taka(wallet.availableBalance),
                         style: PremiumTypography.currencyLarge.copyWith(
                           color: Colors.white,
                           fontSize: 36,
@@ -396,7 +396,7 @@ class _PremiumBalanceHero extends StatelessWidget {
                     context,
                     Icons.emoji_events_rounded,
                     'Winning',
-                    taka(wallet.winning),
+                    taka(wallet.winningBalance),
                     PremiumColors.winningLight,
                   ),
                 ),
@@ -406,7 +406,7 @@ class _PremiumBalanceHero extends StatelessWidget {
                     context,
                     Icons.sports_esports_rounded,
                     'Gaming',
-                    taka(wallet.gaming),
+                    taka(wallet.availableBalance),
                     PremiumColors.gold,
                   ),
                 ),
