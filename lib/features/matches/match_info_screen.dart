@@ -65,6 +65,7 @@ class _MatchInfoScreenState extends State<MatchInfoScreen> {
   @override
   Widget build(BuildContext context) {
     
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
       appBar: AppBar(

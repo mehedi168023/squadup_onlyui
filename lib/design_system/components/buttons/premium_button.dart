@@ -50,8 +50,8 @@ class PremiumButton extends StatefulWidget {
     this.icon,
     this.isLoading = false,
     this.isFullWidth = false,
-    this.customColor,
   }) : variant = PremiumButtonVariant.secondary,
+    this.customColor,
 
   
   const PremiumButton.outlined({
