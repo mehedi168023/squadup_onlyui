@@ -16,10 +16,9 @@ class PremiumButton extends StatefulWidget {
   final Widget? icon;
   final bool isLoading;
   final bool isFullWidth;
-  final Color? customColor;
+  final Color? customColor = null;
   
   const PremiumButton({
-    this.customColor,
     super.key,
     required this.text,
     this.onPressed,
@@ -28,10 +27,12 @@ class PremiumButton extends StatefulWidget {
     this.icon,
     this.isLoading = false,
     this.isFullWidth = false,
+    this.customColor,
   });
   
-    this.customColor,
+  const PremiumButton.primary({
     super.key,
+    this.customColor,
     required this.text,
     this.onPressed,
     this.size = PremiumButtonSize.medium,
@@ -39,7 +40,6 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.primary,
-
   
   const PremiumButton.secondary({
     super.key,
@@ -50,8 +50,6 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.secondary,
-    this.customColor,
-
   
   const PremiumButton.outlined({
     super.key,
@@ -62,8 +60,6 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.outlined,
-    this.customColor,
-
   
   const PremiumButton.text({
     super.key,
@@ -74,8 +70,6 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.text,
-    this.customColor,
-
 
   @override
   State<PremiumButton> createState() => _PremiumButtonState();
