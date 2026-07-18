@@ -277,7 +277,7 @@ class _ProductBuyScreenState extends State<ProductBuyScreen> {
   Widget _buildDropdown(
     BuildContext context, bool isDark, String label, String? selected,
     IconData icon, bool loading, bool error, VoidCallback onRetry,
-    List<String> items, ValueChanged<int> onChanged, {bool enabled = true},
+    List<String> items, ValueChanged<int> onChanged, {bool enabled = true}
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
