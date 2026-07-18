@@ -210,7 +210,8 @@ class _TopupScreenState extends State<TopupScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  gradient: active ? PremiumColors.primaryGradient : (isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3),
+                  gradient: active ? PremiumColors.primaryGradient : null,
+          color: active ? null : (isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(taka(pack.price), style: PremiumTypography.labelSmall.copyWith(

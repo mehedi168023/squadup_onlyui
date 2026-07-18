@@ -571,6 +571,7 @@ class PremiumSlotBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: PremiumColors.primary.withOpacity(0.1),
@@ -617,7 +618,6 @@ class _PremiumBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final session = SessionService.to;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
