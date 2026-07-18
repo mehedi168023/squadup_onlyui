@@ -520,6 +520,7 @@ class _PremiumDetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
