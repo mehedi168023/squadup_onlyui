@@ -134,11 +134,11 @@ class _MatchListScreenState extends State<MatchListScreen> {
   }
 }
 
-class _PremiumMatchListCard extends StatelessWidget {
+class PremiumMatchListCard extends StatelessWidget {
   final FfMatch match;
   final VoidCallback onTap;
   
-  const _PremiumMatchListCard({required this.match, required this.onTap});
+  const PremiumMatchListCard({required this.match, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

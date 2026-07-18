@@ -13,6 +13,7 @@ import '../../design_system/tokens/premium_radius.dart';
 import '../../design_system/components/buttons/premium_button.dart';
 import '../../design_system/components/inputs/premium_text_field.dart';
 import '../../app/widgets/premium_back_button.dart';
+import '../../design_system/tokens/premium_shadows.dart';
 
 class RegisterController extends GetxController {
   final formKey = GlobalKey<FormState>();

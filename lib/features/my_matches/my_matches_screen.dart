@@ -59,7 +59,7 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
             final m = joined[i];
             return Column(
               children: [
-                _PremiumMatchListCard(
+                PremiumMatchListCard(
                   match: m,
                   onTap: () => Get.toNamed(AppRoutes.matchInfo, arguments: m),
                 ),

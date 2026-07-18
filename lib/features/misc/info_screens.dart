@@ -7,6 +7,7 @@ import '../../design_system/tokens/premium_spacing.dart';
 import '../../design_system/tokens/premium_radius.dart';
 import '../../design_system/components/cards/premium_card.dart';
 import '../../app/widgets/premium_back_button.dart';
+import '../../design_system/tokens/premium_shadows.dart';
 import '../../app/widgets/common_widgets.dart';
 
 class TermsScreen extends StatelessWidget {

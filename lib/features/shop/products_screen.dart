@@ -11,6 +11,7 @@ import '../../design_system/tokens/premium_radius.dart';
 import '../../design_system/animations/premium_curves.dart';
 import '../../design_system/animations/premium_durations.dart';
 import '../../app/widgets/premium_back_button.dart';
+import '../../design_system/tokens/premium_shadows.dart';
 import '../../app/widgets/responsive.dart';
 
 class ProductsScreen extends StatelessWidget {
