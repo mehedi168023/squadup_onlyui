@@ -164,6 +164,7 @@ class _PremiumUploadBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color color = attached ? PremiumColors.winning : PremiumColors.primary;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     return GestureDetector(
       onTap: onTap,

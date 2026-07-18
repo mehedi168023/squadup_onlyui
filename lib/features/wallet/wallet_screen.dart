@@ -270,7 +270,7 @@ class WalletScreen extends StatelessWidget {
     List<String> steps,
   ) {
     return PremiumCard(
-      onTap: () => AppSheet.show(title: title, child: steps),
+      onTap: () => AppSheet.show(title: title, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: steps.map((s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s))).toList())),
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [

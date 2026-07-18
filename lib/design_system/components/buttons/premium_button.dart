@@ -40,7 +40,7 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.primary,
-       customColor = null;
+
   
   const PremiumButton.secondary({
     super.key,
@@ -51,7 +51,7 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.secondary,
-       customColor = null;
+
   
   const PremiumButton.outlined({
     super.key,
@@ -62,7 +62,7 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.outlined,
-       customColor = null;
+
   
   const PremiumButton.text({
     super.key,
@@ -73,7 +73,7 @@ class PremiumButton extends StatefulWidget {
     this.isLoading = false,
     this.isFullWidth = false,
   }) : variant = PremiumButtonVariant.text,
-       customColor = null;
+
 
   @override
   State<PremiumButton> createState() => _PremiumButtonState();

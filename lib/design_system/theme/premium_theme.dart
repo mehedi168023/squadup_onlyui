@@ -106,7 +106,7 @@ class PremiumTheme {
       ),
       
       // Card theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: PremiumColors.darkCard,
         shadowColor: Colors.black.withOpacity(0.3),
         elevation: 0,
@@ -276,7 +276,7 @@ class PremiumTheme {
       ),
       
       // Dialog theme
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: PremiumColors.darkCardElevated,
         elevation: 8,
         shape: RoundedRectangleBorder(
@@ -504,7 +504,7 @@ class PremiumTheme {
       onPrimary: Colors.white,
       primaryContainer: PremiumColors.primary100,
       onPrimaryContainer: PremiumColors.primary900,
-      secondary: PremiumColors.successDeep,
+      secondary: PremiumColors.success,
       onSecondary: Colors.white,
       secondaryContainer: PremiumColors.successPale,
       onSecondaryContainer: PremiumColors.successDark,
@@ -573,7 +573,7 @@ class PremiumTheme {
         ),
       ),
       
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: PremiumColors.lightCard,
         shadowColor: Colors.black.withOpacity(0.1),
         elevation: 0,
@@ -735,7 +735,7 @@ class PremiumTheme {
         ),
       ),
       
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: PremiumColors.lightCard,
         elevation: 8,
         shape: RoundedRectangleBorder(

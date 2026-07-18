@@ -201,7 +201,7 @@ class _TopupScreenState extends State<TopupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(pack.title, style: PremiumTypography.bodyMedium.copyWith(color: context.text)),
+                    Text(pack.amount, style: PremiumTypography.bodyMedium.copyWith(color: context.text)),
                     const SizedBox(height: 4),
                     Text('${pack.amount} ${pack.unit}', style: PremiumTypography.h6.copyWith(color: PremiumColors.primary)),
                   ],

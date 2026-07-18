@@ -43,7 +43,7 @@ class PremiumKeepAlive extends StatelessWidget {
 /// Memoized value builder - only rebuilds when dependencies change
 class PremiumMemoBuilder<T> extends StatelessWidget {
   final T Function() builder;
-  final T Function(T previous, T current) areEqual;
+  final bool Function(T previous, T current) areEqual;
   final Widget Function(BuildContext context, T value) child;
   final String? debugLabel;
 
@@ -68,7 +68,7 @@ class PremiumMemoBuilder<T> extends StatelessWidget {
 
 class _MemoWidget<T> extends StatefulWidget {
   final T Function() builder;
-  final T Function(T previous, T current) areEqual;
+  final bool Function(T previous, T current) areEqual;
   final Widget Function(BuildContext context, T value) child;
   final String? debugLabel;
 
