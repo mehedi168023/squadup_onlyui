@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:get/get.dart';
 import '../../app/core/app_constants.dart';
 import '../../app/data/mock/mock_data.dart';
 import '../../app/data/models/misc_models.dart';
 import '../../app/data/services/session_service.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../app/widgets/premium_back_button.dart';
-import '../../design_system/tokens/premium_shadows.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
 import '../../app/widgets/responsive.dart';
 
 class TopPlayersScreen extends StatefulWidget {
@@ -30,29 +27,19 @@ class _TopPlayersScreenState extends State<TopPlayersScreen> {
   }
 
   Color _rankColor(int rank) => switch (rank) {
-        1 => PremiumColors.gold,
-        2 => PremiumColors.silver,
-        3 => PremiumColors.bronze,
-        _ => PremiumColors.darkTextSecondary,
+        1 => AppColors.gold,
+        2 => AppColors.silver,
+        3 => AppColors.bronze,
+        _ => AppColors.textSecondary,
       };
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Top Players',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Top Players')),
       body: ResponsiveCenter(
         child: Obx(() {
+          // Live standings, falling back to bundled demo data until loaded.
           final board = session.leaderboard.isNotEmpty
               ? session.leaderboard.toList()
               : MockData.leaderboard;
@@ -63,28 +50,57 @@ class _TopPlayersScreenState extends State<TopPlayersScreen> {
 
           return ListView(
             padding: EdgeInsets.fromLTRB(
-              PremiumSpacing.screenHorizontal,
-              PremiumSpacing.md,
-              PremiumSpacing.screenHorizontal,
-              MediaQuery.of(context).padding.bottom + 24,
-            ),
+                12, 12, 12, MediaQuery.of(context).padding.bottom + 24),
             children: [
-              _buildYourPositionCard(context, isDark, rank, user?.name, earnings),
-              const SizedBox(height: 20),
-              if (top3.length == 3) _PremiumPodium(top3: top3, rankColor: _rankColor),
-              const SizedBox(height: 24),
-              Text(
-                'ALL PLAYERS',
-                style: PremiumTypography.labelLarge.copyWith(
-                  color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
+              // Your position
+              AppCard(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.3),
+                    context.cSurface
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: AppColors.primary,
+                      child: Text('#$rank',
+                          style: AppTextStyles.title
+                              .copyWith(color: Colors.white, fontSize: 14)),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Your Position',
+                              style: AppTextStyles.body2),
+                          Text(user?.name ?? 'Guest', style: AppTextStyles.h3),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text('Total Earnings',
+                            style: AppTextStyles.body2),
+                        Text(taka(earnings),
+                            style: AppTextStyles.h3
+                                .copyWith(color: AppColors.gold)),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+              if (top3.length == 3) _Podium(top3: top3, rankColor: _rankColor),
+              const SizedBox(height: 15),
+              const SectionHeader('ALL PLAYERS'),
+              const SizedBox(height: 12),
               ...board.map((e) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _PremiumRankRow(entry: e, color: _rankColor(e.rank)),
+                    child: _RankRow(entry: e, color: _rankColor(e.rank)),
                   )),
             ],
           );
@@ -92,125 +108,27 @@ class _TopPlayersScreenState extends State<TopPlayersScreen> {
       ),
     );
   }
-
-  Widget _buildYourPositionCard(
-    BuildContext context,
-    bool isDark,
-    int rank,
-    String? name,
-    double earnings,
-  ) {
-    return Container(
-      padding: PremiumSpacing.card,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            PremiumColors.primary.withOpacity(0.2),
-            (isDark ? PremiumColors.darkCard : PremiumColors.lightCard).withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(PremiumRadius.card),
-        border: Border.all(
-          color: PremiumColors.primary.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: PremiumColors.primary,
-              shape: BoxShape.circle,
-              boxShadow: PremiumShadows.primaryGlow,
-            ),
-            child: Center(
-              child: Text(
-                '#$rank',
-                style: PremiumTypography.h5.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your Position',
-                  style: PremiumTypography.caption.copyWith(
-                    color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  name ?? 'Guest',
-                  style: PremiumTypography.h5.copyWith(
-                    color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'Total Earnings',
-                style: PremiumTypography.caption.copyWith(
-                  color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                taka(earnings),
-                style: PremiumTypography.h5.copyWith(
-                  color: PremiumColors.gold,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-class _PremiumPodium extends StatelessWidget {
+class _Podium extends StatelessWidget {
   final List<LeaderboardEntry> top3;
   final Color Function(int) rankColor;
-  
-  const _PremiumPodium({required this.top3, required this.rankColor});
+  const _Podium({required this.top3, required this.rankColor});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return PremiumCard(
-      padding: PremiumSpacing.card,
+    return AppCard(
       child: Column(
         children: [
-          Center(
-            child: Text(
-              'TOP PLAYERS',
-              style: PremiumTypography.labelLarge.copyWith(
-                color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
+          const Center(
+              child: Text('TOP PLAYERS', style: AppTextStyles.caption)),
+          const SizedBox(height: 13),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(child: _buildPodiumColumn(top3[1], 90, rankColor(2), false)),
-              Expanded(child: _buildPodiumColumn(top3[0], 120, rankColor(1), true)),
-              Expanded(child: _buildPodiumColumn(top3[2], 70, rankColor(3), false)),
+              Expanded(child: _column(top3[1], 90, rankColor(2))),
+              Expanded(child: _column(top3[0], 120, rankColor(1), crown: true)),
+              Expanded(child: _column(top3[2], 70, rankColor(3))),
             ],
           ),
         ],
@@ -218,33 +136,21 @@ class _PremiumPodium extends StatelessWidget {
     );
   }
 
-  Widget _buildPodiumColumn(LeaderboardEntry e, double height, Color color, bool crown) {
+  Widget _column(LeaderboardEntry e, double height, Color color,
+      {bool crown = false}) {
     return Column(
       children: [
-        Icon(
-          crown ? Icons.workspace_premium_rounded : Icons.emoji_events_rounded,
-          color: color,
-          size: crown ? 36 : 28,
-        ),
+        Icon(crown ? Icons.workspace_premium : Icons.emoji_events,
+            color: color, size: crown ? 32 : 24),
+        const SizedBox(height: 6),
+        Text(e.name,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.title.copyWith(fontSize: 13)),
+        Text(taka(e.wonAmount),
+            style: AppTextStyles.title.copyWith(color: color, fontSize: 14)),
         const SizedBox(height: 8),
-        Text(
-          e.name,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: PremiumTypography.labelSmall.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          taka(e.wonAmount),
-          style: PremiumTypography.bodyMedium.copyWith(
-            color: color,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 12),
         Container(
           height: height,
           margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -253,78 +159,53 @@ class _PremiumPodium extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                color.withOpacity(0.3),
-                color.withOpacity(0.05),
+                color.withValues(alpha: 0.3),
+                color.withValues(alpha: 0.05)
               ],
             ),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            border: Border.all(color: color.withOpacity(0.5), width: 2),
+            border: Border.all(color: color.withValues(alpha: 0.4)),
           ),
           alignment: Alignment.center,
-          child: Text(
-            '#${e.rank}',
-            style: PremiumTypography.h2.copyWith(
-              color: color,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          child: Text('#${e.rank}',
+              style: AppTextStyles.h2.copyWith(color: color)),
         ),
       ],
     );
   }
 }
 
-class _PremiumRankRow extends StatelessWidget {
+class _RankRow extends StatelessWidget {
   final LeaderboardEntry entry;
   final Color color;
-  
-  const _PremiumRankRow({required this.entry, required this.color});
+  const _RankRow({required this.entry, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isTop3 = entry.rank <= 3;
-    
+    final isTop3 = entry.rank <= 3;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? PremiumColors.darkCard : PremiumColors.lightCard,
-        borderRadius: BorderRadius.circular(PremiumRadius.md),
+        color: context.cSurface,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isTop3 ? color.withOpacity(0.5) : (isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder),
-          width: isTop3 ? 1.5 : 1,
-        ),
+            color: isTop3 ? color.withValues(alpha: 0.5) : context.cBorder),
       ),
       child: Row(
         children: [
           SizedBox(
             width: 36,
-            child: Text(
-              '#${entry.rank}',
-              style: PremiumTypography.bodyMedium.copyWith(
-                color: isTop3 ? color : (isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: Text('#${entry.rank}',
+                style: AppTextStyles.title
+                    .copyWith(color: isTop3 ? color : context.cTextDim)),
           ),
           Expanded(
-            child: Text(
-              entry.name,
-              style: PremiumTypography.bodyMedium.copyWith(
-                color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Icon(Icons.emoji_events_rounded, color: color, size: 18),
+              child: Text(entry.name,
+                  style: AppTextStyles.title.copyWith(fontSize: 16))),
+          Icon(Icons.emoji_events, color: color, size: 18),
           const SizedBox(width: 8),
-          Text(
-            taka(entry.wonAmount),
-            style: PremiumTypography.bodyMedium.copyWith(
-              color: color,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          Text(taka(entry.wonAmount),
+              style: AppTextStyles.title.copyWith(color: color)),
         ],
       ),
     );

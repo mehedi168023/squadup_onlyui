@@ -1,6 +1,6 @@
 # krinry configuration v3.1.1
 project:
-  name: squadup
+  name: playtour
   type: flutter
 
 build:

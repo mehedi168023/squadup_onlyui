@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:get/get.dart';
 import '../../app/data/models/match_model.dart';
 import '../../app/data/services/session_service.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/animations/premium_curves.dart';
-import '../../design_system/animations/premium_durations.dart';
-import '../../design_system/components/cards/premium_card.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_text_styles.dart';
 import '../../app/widgets/common_widgets.dart';
-import '../../app/widgets/premium_back_button.dart';
 import '../../app/widgets/responsive.dart';
 import 'widgets/match_card.dart';
 
+/// Lists the matches for the tapped game mode, or an empty state.
 class MatchListScreen extends StatefulWidget {
   const MatchListScreen({super.key});
 
@@ -23,40 +19,40 @@ class MatchListScreen extends StatefulWidget {
 }
 
 class _MatchListScreenState extends State<MatchListScreen> {
+  // Read the route argument exactly ONCE. `Get.arguments` is global, mutable
+  // state that holds the *latest* navigation's arguments — so re-reading it in
+  // build() would return the next route's args (e.g. an FfMatch) whenever this
+  // kept-alive page rebuilds under a child (viewport/MediaQuery changes), and
+  // the `as GameMode` cast would crash. Capturing it here pins the correct value.
   final GameMode mode = Get.arguments as GameMode;
   final session = SessionService.to;
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          mode.title,
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: Text(mode.title)),
       body: RefreshIndicator(
-        color: PremiumColors.primary,
-        backgroundColor: isDark ? PremiumColors.darkCardElevated : PremiumColors.lightCard,
+        color: AppColors.primary,
         onRefresh: session.refreshMatches,
         child: ResponsiveCenter(
           child: Obx(() {
             final list = session.matchesForMode(mode.key);
             if (list.isEmpty) {
+              // Fills the viewport so the empty state stays centered on any screen
+              // size while keeping pull-to-refresh available.
               return LayoutBuilder(
                 builder: (context, constraints) => ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                      child: Center(
-                        child: _buildEmptyState(context, isDark),
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: const Center(
+                        child: EmptyState(
+                          icon: Icons.videogame_asset_outlined,
+                          title: 'No matches available right now',
+                          hint: 'Pull down to refresh',
+                        ),
                       ),
                     ),
                   ],
@@ -65,204 +61,82 @@ class _MatchListScreenState extends State<MatchListScreen> {
             }
             return ListView.separated(
               padding: EdgeInsets.fromLTRB(
-                PremiumSpacing.screenHorizontal,
-                PremiumSpacing.md,
-                PremiumSpacing.screenHorizontal,
-                MediaQuery.of(context).padding.bottom + 24,
-              ),
+                  12, 12, 12, MediaQuery.of(context).padding.bottom + 24),
               itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
-              itemBuilder: (_, i) {
-                return TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: Duration(milliseconds: 200 + (i * 50)),
-                  curve: PremiumCurves.emphasized,
-                  builder: (context, value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, 20 * (1 - value)),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: PremiumMatchListCard(
-                    match: list[i],
-                    onTap: () => Get.toNamed(AppRoutes.matchInfo, arguments: list[i]),
-                  ),
-                );
-              },
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
+              itemBuilder: (_, i) => MatchListCard(
+                match: list[i],
+                onTap: () =>
+                    Get.toNamed(AppRoutes.matchInfo, arguments: list[i]),
+              ),
             );
           }),
         ),
       ),
     );
   }
-
-  Widget _buildEmptyState(BuildContext context, bool isDark) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: (isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.videogame_asset_outlined,
-            size: 48,
-            color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'No matches available right now',
-          style: PremiumTypography.h5.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Pull down to refresh',
-          style: PremiumTypography.body.copyWith(
-            color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
-class PremiumMatchListCard extends StatelessWidget {
+/// Compact match row used in the list.
+class MatchListCard extends StatelessWidget {
   final FfMatch match;
   final VoidCallback onTap;
-  
-  const PremiumMatchListCard({required this.match, required this.onTap});
+  const MatchListCard({super.key, required this.match, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return PremiumCard(
+    return AppCard(
       onTap: onTap,
-      padding: PremiumSpacing.card,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Expanded(
-                child: Text(
-                  match.title,
-                  style: PremiumTypography.h5.copyWith(
-                    color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                    fontSize: 17,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 12),
-              _buildStatusBadge(context, isDark),
+                  child: Text(match.title,
+                      style: AppTextStyles.title.copyWith(fontSize: 17))),
+              StatusPill(
+                  text: match.isJoined ? 'Joined' : 'Active',
+                  color: AppColors.success),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: _buildStatChip(
-                  context,
-                  isDark,
-                  Icons.emoji_events_rounded,
-                  PremiumColors.gold,
-                  '${match.prize.toInt()} TK',
-                ),
-              ),
+              _chip(context, Icons.emoji_events, AppColors.gold,
+                  '${match.prize.toInt()} TK'),
               const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatChip(
-                  context,
-                  isDark,
-                  Icons.my_location_rounded,
-                  PremiumColors.killRed,
-                  '${match.perKill.toInt()} TK',
-                ),
-              ),
+              _chip(context, Icons.my_location, AppColors.killRed,
+                  '${match.perKill.toInt()} TK'),
               const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatChip(
-                  context,
-                  isDark,
-                  Icons.payments_rounded,
-                  PremiumColors.primary,
-                  '${match.entryFee.toInt()} TK',
-                ),
-              ),
+              _chip(context, Icons.payments_outlined, AppColors.primary,
+                  '${match.entryFee.toInt()} TK'),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           MatchProgressBar(match: match),
         ],
       ),
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context, bool isDark) {
-    final bool isJoined = match.isJoined;
-    final Color color = isJoined ? PremiumColors.success : PremiumColors.primary;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
+  Widget _chip(BuildContext context, IconData icon, Color color, String text) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: context.cBgAlt,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: context.cBorder),
         ),
-      ),
-      child: Text(
-        isJoined ? 'Joined' : 'Active',
-        style: PremiumTypography.labelSmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 15, color: color),
+            const SizedBox(width: 6),
+            Text(text, style: AppTextStyles.label.copyWith(fontSize: 12)),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildStatChip(
-    BuildContext context,
-    bool isDark,
-    IconData icon,
-    Color color,
-    String text,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3,
-        borderRadius: BorderRadius.circular(PremiumRadius.md),
-        border: Border.all(
-          color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: PremiumTypography.labelSmall.copyWith(
-              color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ],
       ),
     );
   }

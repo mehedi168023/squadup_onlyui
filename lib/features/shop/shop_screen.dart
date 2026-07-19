@@ -3,13 +3,10 @@ import 'package:get/get.dart';
 import '../../app/core/app_constants.dart';
 import '../../app/data/mock/mock_data.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/animations/premium_curves.dart';
-import '../../design_system/animations/premium_durations.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
 import '../../app/widgets/brand_app_bar.dart';
+import '../../app/widgets/common_widgets.dart';
 import '../../app/widgets/promo_banner.dart';
 import '../../app/widgets/responsive.dart';
 
@@ -18,32 +15,20 @@ class ShopScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
       appBar: const BrandAppBar(),
       body: ResponsiveCenter(
         child: ListView(
+          // Clear the floating bottom nav bar (shell uses extendBody: true).
           padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            MediaQuery.of(context).padding.bottom + 84,
-          ),
-          children: [
-            const PromoBanner(banners: MockData.shopBanners),
-            const SizedBox(height: 24),
-            Text(
-              'STORE',
-              style: PremiumTypography.labelLarge.copyWith(
-                color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const _PremiumStoreGrid(),
+              12, 12, 12, MediaQuery.of(context).padding.bottom + 84),
+          children: const [
+            PromoBanner(banners: MockData.shopBanners),
+            SizedBox(height: 14),
+            // Free Fire Topup · Ludo Kingpass · Gaming Store as a 2-column grid.
+            SectionHeader('STORE'),
+            SizedBox(height: 14),
+            _StoreGrid(),
           ],
         ),
       ),
@@ -51,44 +36,42 @@ class ShopScreen extends StatelessWidget {
   }
 }
 
-class _PremiumStoreGrid extends StatelessWidget {
-  const _PremiumStoreGrid();
+/// The three store entry points laid out as image tiles in a 2-column grid
+/// (two on the top row, the third on the bottom-left).
+class _StoreGrid extends StatelessWidget {
+  const _StoreGrid();
 
   @override
   Widget build(BuildContext context) {
     final ff = MockData.topupCategories[0];
     final kingpass = MockData.topupCategories[1];
-    
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
       childAspectRatio: 0.95,
       children: [
-        _PremiumStoreTile(
+        _StoreTile(
           image: ff.image,
           title: 'Free Fire Topup',
           subtitle: 'Diamonds · Instant',
           colors: ff.colors,
-          index: 0,
           onTap: () => Get.toNamed(AppRoutes.topup, arguments: ff),
         ),
-        _PremiumStoreTile(
+        _StoreTile(
           image: kingpass.image,
           title: 'Ludo Kingpass',
           subtitle: 'Coins · Discount',
           colors: kingpass.colors,
-          index: 1,
           onTap: () => Get.toNamed(AppRoutes.topup, arguments: kingpass),
         ),
-        _PremiumStoreTile(
+        _StoreTile(
           image: AppConstants.shopGamingLogo,
           title: 'Gaming Store',
           subtitle: 'Gadgets & gear',
           colors: const [Color(0xFF2A0A40), Color(0xFF120A26)],
-          index: 2,
           onTap: () => Get.toNamed(AppRoutes.products),
         ),
       ],
@@ -96,134 +79,90 @@ class _PremiumStoreGrid extends StatelessWidget {
   }
 }
 
-class _PremiumStoreTile extends StatefulWidget {
+/// A single store tile: full-bleed hero image with a readable title overlay.
+class _StoreTile extends StatelessWidget {
   final String image;
   final String title;
   final String subtitle;
   final List<Color> colors;
-  final int index;
   final VoidCallback onTap;
-  
-  const _PremiumStoreTile({
+  const _StoreTile({
     required this.image,
     required this.title,
     required this.subtitle,
     required this.colors,
-    required this.index,
     required this.onTap,
   });
 
   @override
-  State<_PremiumStoreTile> createState() => _PremiumStoreTileState();
-}
-
-class _PremiumStoreTileState extends State<_PremiumStoreTile> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 300 + (widget.index * 100)),
-      curve: PremiumCurves.emphasized,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 20 * (1 - value)),
-            child: child,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        );
-      },
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-          widget.onTap();
-        },
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedScale(
-          scale: _isPressed ? 0.95 : 1.0,
-          duration: PremiumDurations.buttonPress,
-          curve: PremiumCurves.snappy,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: widget.colors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(PremiumRadius.cardLarge),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.colors.first.withOpacity(0.4),
-                  blurRadius: 20,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: colors.first.withValues(alpha: 0.5),
+              blurRadius: 16,
+              spreadRadius: -8,
+              offset: const Offset(0, 8),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  widget.image,
-                  fit: BoxFit.cover,
-                  cacheWidth: 360,
-                  filterQuality: FilterQuality.low,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.center,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.8),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: PremiumTypography.h5.copyWith(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: PremiumTypography.caption.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Hero image covers the tile; the gradient shows through any
+            // transparent areas and stands in if the asset fails to load.
+            Image.asset(
+              image,
+              fit: BoxFit.cover,
+              cacheWidth: 360,
+              filterQuality: FilterQuality.low,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
-          ),
+            // Bottom scrim keeps the title legible over any image.
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.center,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xCC000000)],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.h3
+                          .copyWith(color: Colors.white, fontSize: 15)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption.copyWith(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 10)),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

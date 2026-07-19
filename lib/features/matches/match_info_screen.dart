@@ -1,25 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:get/get.dart';
 import '../../app/core/app_constants.dart';
 import '../../app/data/models/match_model.dart';
 import '../../app/data/services/session_service.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/tokens/premium_shadows.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../app/widgets/premium_back_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
 class MatchInfoController extends GetxController {
   final FfMatch match;
   MatchInfoController(this.match);
 
-  final tab = 0.obs;
+  final tab = 0.obs; // 0 = Rules, 1 = Participants
   final rulesExpanded = false.obs;
   final remaining = Duration.zero.obs;
   Timer? _timer;
@@ -59,43 +57,30 @@ class MatchInfoScreen extends StatefulWidget {
 }
 
 class _MatchInfoScreenState extends State<MatchInfoScreen> {
+  // Capture the route argument once (see MatchListScreen for why re-reading
+  // `Get.arguments` in build() is unsafe).
   late final FfMatch match = Get.arguments as FfMatch;
   late final MatchInfoController c = Get.put(MatchInfoController(match));
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
+      appBar: AppBar(leading: const PremiumBackButton(), 
         centerTitle: true,
-        title: Text(
-          match.title,
-          overflow: TextOverflow.ellipsis,
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
+        title: Text(match.title, overflow: TextOverflow.ellipsis),
       ),
-      bottomNavigationBar: _PremiumBottomBar(controller: c),
+      bottomNavigationBar: _BottomBar(controller: c),
       body: ResponsiveCenter(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.sm,
-            PremiumSpacing.screenHorizontal,
-            16,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           children: [
-            _PremiumHeaderCard(controller: c),
-            const SizedBox(height: 20),
-            _PremiumSegmentedTabs(controller: c),
-            const SizedBox(height: 20),
+            _HeaderCard(controller: c),
+            const SizedBox(height: AppSpacing.lg),
+            _SegmentedTabs(controller: c),
+            const SizedBox(height: AppSpacing.lg),
             Obx(() => c.tab.value == 0
-                ? _PremiumRulesContent(controller: c)
-                : _PremiumParticipantsContent(match: match)),
+                ? _RulesContent(controller: c)
+                : _ParticipantsContent(match: match)),
           ],
         ),
       ),
@@ -103,92 +88,61 @@ class _MatchInfoScreenState extends State<MatchInfoScreen> {
   }
 }
 
-class _PremiumHeaderCard extends StatelessWidget {
+/// Compact iOS-style card: status + live countdown, three money stats, slots bar.
+class _HeaderCard extends StatelessWidget {
   final MatchInfoController controller;
-  const _PremiumHeaderCard({required this.controller});
+  const _HeaderCard({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     final match = controller.match;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return PremiumCard(
-      padding: PremiumSpacing.card,
+    return _IosCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              _buildPill(match.modeLabel, PremiumColors.primary),
+              _Pill(text: match.modeLabel, color: AppColors.primary),
               const Spacer(),
-              Obx(() => _buildPill(
-                    controller.countdownLabel,
-                    PremiumColors.winning,
+              Obx(() => _Pill(
                     icon: Icons.schedule_rounded,
+                    text: controller.countdownLabel,
+                    color: AppColors.winningTeal,
                   )),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              Expanded(
-                child: _buildMoneyStat(
-                  context,
-                  Icons.emoji_events_rounded,
-                  PremiumColors.gold,
-                  'PRIZE',
-                  match.prize,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildMoneyStat(
-                  context,
-                  Icons.my_location_rounded,
-                  PremiumColors.killRed,
-                  'PER KILL',
-                  match.perKill,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildMoneyStat(
-                  context,
-                  Icons.confirmation_num_rounded,
-                  PremiumColors.winning,
-                  'ENTRY',
-                  match.entryFee,
-                ),
-              ),
+              _money(context, Icons.emoji_events_rounded, AppColors.gold,
+                  'PRIZE', match.prize),
+              const SizedBox(width: AppSpacing.sm),
+              _money(context, Icons.my_location_rounded, AppColors.killRed,
+                  'PER KILL', match.perKill),
+              const SizedBox(width: AppSpacing.sm),
+              _money(context, Icons.confirmation_num_rounded,
+                  AppColors.winningTeal, 'ENTRY', match.entryFee),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
-              Text(
-                'Slots filled',
-                style: PremiumTypography.caption.copyWith(
-                  color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                ),
-              ),
+              Text('Slots filled',
+                  style: AppTextStyles.label.copyWith(color: context.cTextDim)),
               const Spacer(),
-              Text(
-                '${match.slotsTaken}/${match.slotsTotal}',
-                style: PremiumTypography.bodyMedium.copyWith(
-                  color: PremiumColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text('${match.slotsTaken}/${match.slotsTotal}',
+                  style:
+                      AppTextStyles.title.copyWith(color: AppColors.primary)),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm),
           ClipRRect(
-            borderRadius: BorderRadius.circular(PremiumRadius.full),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             child: LinearProgressIndicator(
               value: match.slotProgress,
-              minHeight: 8,
-              backgroundColor: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightBorderSubtle,
-              valueColor: const AlwaysStoppedAnimation(PremiumColors.primary),
+              minHeight: 7,
+              backgroundColor: context.cBgAlt,
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             ),
           ),
         ],
@@ -196,86 +150,48 @@ class _PremiumHeaderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPill(String text, Color color, {IconData? icon}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 6),
+  Widget _money(BuildContext context, IconData icon, Color color, String label,
+      double value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 6),
+        decoration: BoxDecoration(
+          color: context.cSurfaceAlt,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(taka(value),
+                  style: AppTextStyles.title.copyWith(fontSize: 14)),
+            ),
+            const SizedBox(height: 2),
+            Text(label,
+                style: AppTextStyles.caption
+                    .copyWith(color: context.cTextMuted, fontSize: 9)),
           ],
-          Text(
-            text,
-            style: PremiumTypography.labelSmall.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMoneyStat(
-    BuildContext context,
-    IconData icon,
-    Color color,
-    String label,
-    double value,
-  ) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3,
-        borderRadius: BorderRadius.circular(PremiumRadius.md),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 6),
-          Text(
-            taka(value),
-            style: PremiumTypography.label.copyWith(
-              color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: PremiumTypography.captionSmall.copyWith(
-              color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _PremiumSegmentedTabs extends StatelessWidget {
+/// iOS-style sliding segmented control.
+class _SegmentedTabs extends StatelessWidget {
   final MatchInfoController controller;
-  const _PremiumSegmentedTabs({required this.controller});
+  const _SegmentedTabs({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Container(
-      height: 48,
+      height: 42,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3,
-        borderRadius: BorderRadius.circular(PremiumRadius.md),
+        color: context.cBgAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Obx(() {
         final sel = controller.tab.value;
@@ -284,55 +200,30 @@ class _PremiumSegmentedTabs extends StatelessWidget {
           return Stack(
             children: [
               AnimatedPositioned(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOutCubic,
+                duration: AppDurations.base,
+                curve: AppCurves.standard,
                 left: sel * segW,
                 top: 0,
                 bottom: 0,
                 width: segW,
                 child: Container(
-                  margin: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: isDark ? PremiumColors.darkCard : PremiumColors.lightCard,
-                    borderRadius: BorderRadius.circular(PremiumRadius.sm),
-                    boxShadow: isDark ? PremiumShadows.darkCard : PremiumShadows.lightCard,
+                    color: context.cSurface,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 6,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                 ),
               ),
               Row(
                 children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => controller.tab.value = 0,
-                      child: Center(
-                        child: Text(
-                          'Rules',
-                          style: PremiumTypography.label.copyWith(
-                            color: sel == 0
-                                ? (isDark ? PremiumColors.darkText : PremiumColors.lightText)
-                                : (isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary),
-                            fontWeight: sel == 0 ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => controller.tab.value = 1,
-                      child: Center(
-                        child: Text(
-                          'Participants',
-                          style: PremiumTypography.label.copyWith(
-                            color: sel == 1
-                                ? (isDark ? PremiumColors.darkText : PremiumColors.lightText)
-                                : (isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary),
-                            fontWeight: sel == 1 ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  _seg(context, 'Rules', 0, sel == 0),
+                  _seg(context, 'Participants', 1, sel == 1),
                 ],
               ),
             ],
@@ -341,170 +232,165 @@ class _PremiumSegmentedTabs extends StatelessWidget {
       }),
     );
   }
+
+  Widget _seg(BuildContext context, String label, int index, bool active) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => controller.tab.value = index,
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: AppDurations.fast,
+            style: AppTextStyles.title.copyWith(
+              fontSize: 13.5,
+              color: active ? context.cText : context.cTextDim,
+            ),
+            child: Text(label),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _PremiumRulesContent extends StatelessWidget {
+class _RulesContent extends StatelessWidget {
   final MatchInfoController controller;
-  const _PremiumRulesContent({required this.controller});
+  const _RulesContent({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     final match = controller.match;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'MATCH DETAILS',
-          style: PremiumTypography.labelLarge.copyWith(
-            color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-            letterSpacing: 1.2,
-            fontWeight: FontWeight.w700,
-          ),
+        // iOS grouped detail list.
+        _IosGroup(
+          rows: [
+            _DetailRow(label: 'Map', value: match.map),
+            _DetailRow(label: 'Mode', value: match.modeLabel),
+            _DetailRow(label: 'Type', value: match.type),
+            _DetailRow(label: 'Version', value: match.version),
+            _DetailRow(label: 'Device', value: match.device),
+            _DetailRow(label: 'Starts', value: _formatDate(match.startTime)),
+          ],
         ),
-        const SizedBox(height: 16),
-        _PremiumIosGroup(rows: [
-          _PremiumDetailRow(label: 'Match ID', value: '#${match.id}'),
-          _PremiumDetailRow(label: 'Mode', value: match.modeLabel),
-          _PremiumDetailRow(label: 'Map', value: match.map),
-          _PremiumDetailRow(
-            label: 'Start Time',
-            value: fullDateWeekday(match.startTime),
-            valueIsTitle: true,
-          ),
-        ]),
-        const SizedBox(height: 24),
-        Text(
-          'RULES',
-          style: PremiumTypography.labelLarge.copyWith(
-            color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-            letterSpacing: 1.2,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 16),
-        PremiumCard(
-          padding: PremiumSpacing.card,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final rule in match.rules.split('\n'))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 6),
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: PremiumColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          rule,
-                          style: PremiumTypography.body.copyWith(
-                            color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
+        const SizedBox(height: AppSpacing.lg),
+        const _SectionLabel('MATCH RULES'),
+        const SizedBox(height: AppSpacing.sm),
+        _IosCard(
+          child: Obx(() {
+            final expanded = controller.rulesExpanded.value;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  match.rules,
+                  maxLines: expanded ? null : 6,
+                  overflow:
+                      expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                  style: AppTextStyles.body1.copyWith(height: 1.7),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: controller.rulesExpanded.toggle,
+                    icon: Icon(
+                        expanded
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: AppColors.primary),
+                    label: Text(expanded ? 'Show Less' : 'Show Full Rules',
+                        style: AppTextStyles.title.copyWith(
+                            color: AppColors.primary, fontSize: 13.5)),
                   ),
                 ),
-            ],
-          ),
+              ],
+            );
+          }),
         ),
       ],
     );
   }
+
+  static String _formatDate(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+    final ampm = d.hour < 12 ? 'AM' : 'PM';
+    final m = d.minute.toString().padLeft(2, '0');
+    return '${d.day} ${months[d.month - 1]}, $h:$m $ampm';
+  }
 }
 
-class _PremiumParticipantsContent extends StatelessWidget {
+class _ParticipantsContent extends StatelessWidget {
   final FfMatch match;
-  const _PremiumParticipantsContent({required this.match});
+  const _ParticipantsContent({required this.match});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'PARTICIPANTS (${match.slotsTaken}/${match.slotsTotal})',
-          style: PremiumTypography.labelLarge.copyWith(
-            color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-            letterSpacing: 1.2,
-            fontWeight: FontWeight.w700,
-          ),
+    if (match.participants.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(top: AppSpacing.xxxl),
+        child: EmptyState(
+          icon: Icons.groups_outlined,
+          title: 'No participants yet',
+          hint: 'Be the first to join',
         ),
-        const SizedBox(height: 16),
-        if (match.participants.isEmpty)
-          PremiumCard(
-            padding: PremiumSpacing.card,
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.people_outline_rounded,
-                    size: 48,
-                    color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No participants yet',
-                    style: PremiumTypography.body.copyWith(
-                      color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: match.participants.asMap().entries.map((entry) {
-              final i = entry.key;
-              final p = entry.value;
-              return _PremiumSlotBadge(
-                slot: i + 1,
-                name: p.ign,
-              );
-            }).toList(),
+      );
+    }
+    return _IosGroup(
+      rows: [
+        for (final p in match.participants)
+          _DetailRow(
+            leading: _SlotBadge(slot: p.slot),
+            value: p.ign,
+            valueIsTitle: true,
           ),
       ],
     );
   }
 }
 
-class _PremiumIosGroup extends StatelessWidget {
-  final List<_PremiumDetailRow> rows;
-  const _PremiumIosGroup({required this.rows});
+// ── Reusable iOS building blocks ──────────────────────────────────────────
+
+/// A rounded "inset grouped" surface card.
+class _IosCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  const _IosCard(
+      {required this.child, this.padding = const EdgeInsets.all(14)});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return PremiumCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: context.cSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: context.cBorder),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// An iOS grouped list: rows separated by inset hairline dividers.
+class _IosGroup extends StatelessWidget {
+  final List<_DetailRow> rows;
+  const _IosGroup({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return _IosCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Column(
         children: [
           for (int i = 0; i < rows.length; i++) ...[
             rows[i],
             if (i != rows.length - 1)
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-              ),
+              Divider(height: 1, thickness: 1, color: context.cBorder),
           ],
         ],
       ),
@@ -512,32 +398,28 @@ class _PremiumIosGroup extends StatelessWidget {
   }
 }
 
-class _PremiumDetailRow extends StatelessWidget {
+class _DetailRow extends StatelessWidget {
   final String? label;
   final String value;
+  final Widget? leading;
   final bool valueIsTitle;
-  
-  const _PremiumDetailRow({
+  const _DetailRow({
     this.label,
     required this.value,
+    this.leading,
     this.valueIsTitle = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 13),
       child: Row(
         children: [
+          if (leading != null) ...[leading!, const SizedBox(width: 12)],
           if (label != null)
-            Text(
-              label!,
-              style: PremiumTypography.body.copyWith(
-                color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-              ),
-            ),
+            Text(label!,
+                style: AppTextStyles.body1.copyWith(color: context.cTextDim)),
           const Spacer(),
           Flexible(
             child: Text(
@@ -545,12 +427,9 @@ class _PremiumDetailRow extends StatelessWidget {
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
               style: valueIsTitle
-                  ? PremiumTypography.bodyMedium.copyWith(
-                      color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                    )
-                  : PremiumTypography.label.copyWith(
-                      color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                    ),
+                  ? AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)
+                  : AppTextStyles.title
+                      .copyWith(fontSize: 13.5, color: context.cText),
             ),
           ),
         ],
@@ -559,97 +438,100 @@ class _PremiumDetailRow extends StatelessWidget {
   }
 }
 
-class _PremiumSlotBadge extends StatelessWidget {
+class _SlotBadge extends StatelessWidget {
   final int slot;
-  final String name;
-  
-  const _PremiumSlotBadge({
-    required this.slot,
-    required this.name,
-  });
+  const _SlotBadge({required this.slot});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: PremiumColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: PremiumColors.primary.withOpacity(0.3),
-        ),
+        shape: BoxShape.circle,
+        color: AppColors.primary.withValues(alpha: 0.15),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+      ),
+      child: Text('$slot',
+          style: AppTextStyles.title
+              .copyWith(color: AppColors.primary, fontSize: 13)),
+    );
+  }
+}
+
+/// A compact accent pill with optional leading icon.
+class _Pill extends StatelessWidget {
+  final String text;
+  final Color color;
+  final IconData? icon;
+  const _Pill({required this.text, required this.color, this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: PremiumColors.primary.withOpacity(0.2),
-            ),
-            child: Text(
-              '$slot',
-              style: PremiumTypography.labelSmall.copyWith(
-                color: PremiumColors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            name,
-            style: PremiumTypography.labelSmall.copyWith(
-              color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-            ),
-          ),
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 5),
+          ],
+          Text(text,
+              style: AppTextStyles.label
+                  .copyWith(color: color, fontWeight: FontWeight.w700)),
         ],
       ),
     );
   }
 }
 
-class _PremiumBottomBar extends StatelessWidget {
+/// iOS-style uppercase grey section caption.
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(text,
+          style: AppTextStyles.caption.copyWith(color: context.cTextMuted)),
+    );
+  }
+}
+
+class _BottomBar extends StatelessWidget {
   final MatchInfoController controller;
-  const _PremiumBottomBar({required this.controller});
+  const _BottomBar({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     final session = SessionService.to;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? PremiumColors.darkSurface1 : PremiumColors.lightCard,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-              width: 1,
-            ),
-          ),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
         child: Obx(() {
+          // Observe the live match from the session list so "Already Joined"
+          // updates reactively after a successful join.
           final live = session.matches.firstWhere(
             (m) => m.id == controller.match.id,
             orElse: () => controller.match,
           );
           final joined = live.isJoined;
-          
-          return PremiumButton.primary(
-            text: joined ? 'Already Joined' : 'Join Match',
-            icon: Icon(
-              joined ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
-            ),
+          return PrimaryButton(
+            label: joined ? 'Already Joined' : 'Join Match',
+            icon: joined ? Icons.check_circle : Icons.add_circle_outline,
+            variant: ButtonVariant.green,
             onPressed: joined
                 ? null
                 : () => Get.toNamed(AppRoutes.joinMatch, arguments: live),
-            isFullWidth: true,
-            customColor: PremiumColors.winning,
           );
         }),
       ),

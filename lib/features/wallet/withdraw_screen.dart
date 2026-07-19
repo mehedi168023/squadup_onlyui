@@ -4,19 +4,16 @@ import 'package:get/get.dart';
 import '../../app/core/app_constants.dart';
 import '../../app/core/app_toast.dart';
 import '../../app/core/validators.dart';
+import '../../app/widgets/premium_back_button.dart';
 import '../../app/data/mock/mock_data.dart';
 import '../../app/data/models/heads_up_notification.dart';
 import '../../app/data/services/notification_service.dart';
 import '../../app/data/services/session_service.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../design_system/components/inputs/premium_text_field.dart';
-import '../../app/widgets/premium_back_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
 import '../../app/widgets/payment_channel_field.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
 class WithdrawController extends GetxController {
@@ -50,7 +47,7 @@ class WithdrawController extends GetxController {
     final ok =
         await SessionService.to.withdraw(amt, ch.key, number.text.trim());
     loading.value = false;
-    if (!ok) return;
+    if (!ok) return; // SessionService already surfaced the server message
     Get.back();
     NotificationService.to.showHeadsUp(
       HeadsUpNotification(
@@ -71,203 +68,126 @@ class WithdrawScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.put(WithdrawController());
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     const channels = MockData.withdrawChannels;
 
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Withdraw',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Withdraw')),
       body: ResponsiveCenter(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            24,
-          ),
+          padding: const EdgeInsets.all(12),
           children: [
-            _buildSectionHeader(context, isDark, 'PAYMENT CHANNEL'),
-            const SizedBox(height: 16),
-            _buildChannelDropdown(context, isDark, c, channels),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, isDark, 'WALLET DETAILS'),
-            const SizedBox(height: 16),
-            PremiumTextField(
+            Text('PAYMENT CHANNEL',
+                style: AppTextStyles.caption.copyWith(color: context.cTextDim)),
+            const SizedBox(height: 9),
+            Obx(() => DropdownButtonFormField<int>(
+                  initialValue: c.channel.value,
+                  isExpanded: true,
+                  borderRadius: BorderRadius.circular(14),
+                  dropdownColor: context.cSurface,
+                  icon: Icon(Icons.keyboard_arrow_down_rounded,
+                      color: context.cTextDim),
+                  decoration: const InputDecoration(
+                    labelText: 'Select withdraw method',
+                  ),
+                  selectedItemBuilder: (context) => List.generate(
+                    channels.length,
+                    (i) => PaymentChannelRow(channel: channels[i]),
+                  ),
+                  items: List.generate(
+                    channels.length,
+                    (i) => DropdownMenuItem<int>(
+                      value: i,
+                      child: PaymentChannelRow(channel: channels[i]),
+                    ),
+                  ),
+                  onChanged: (v) {
+                    if (v != null) c.channel.value = v;
+                  },
+                )),
+            const SizedBox(height: 13),
+            TextField(
               controller: c.number,
-              label: 'Wallet Number',
-              hint: '01XXXXXXXXX',
-              prefixIcon: const Icon(Icons.phone_android_rounded),
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(11),
+              ],
+              style: AppTextStyles.body1,
+              decoration: const InputDecoration(
+                  labelText: 'Wallet Number',
+                  hintText: '01XXXXXXXXX'),
             ),
-            const SizedBox(height: 16),
-            PremiumTextField(
+            const SizedBox(height: 14),
+            TextField(
               controller: c.amount,
-              label: 'Amount',
-              hint: 'Enter amount to withdraw',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textInputAction: TextInputAction.done,
-              prefixIcon: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 8),
-                child: Text(
-                  AppConstants.currency,
-                  style: PremiumTypography.h5.copyWith(
-                    color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                  ),
-                ),
-              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
               onSubmitted: (_) => c.submit(),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Min: ${taka(MockData.minWithdraw)}  ·  Max: ${taka(MockData.maxWithdraw)}',
-              style: PremiumTypography.caption.copyWith(
-                color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Obx(() => PremiumButton.primary(
-                  text: 'WITHDRAW',
-                  icon: const Icon(Icons.arrow_upward_rounded),
-                  onPressed: c.loading.value ? null : c.submit,
-                  isLoading: c.loading.value,
-                  isFullWidth: true,
-                  customColor: PremiumColors.danger,
-                )),
-            const SizedBox(height: 24),
-            _buildBalanceCard(context, isDark),
-            const SizedBox(height: 16),
-            _buildNoticeCard(context, isDark),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, bool isDark, String title) {
-    return Text(
-      title,
-      style: PremiumTypography.labelLarge.copyWith(
-        color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-        letterSpacing: 1.2,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-
-  Widget _buildChannelDropdown(
-    BuildContext context,
-    bool isDark,
-    WithdrawController c,
-    List<dynamic> channels,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? PremiumColors.darkSurface2 : PremiumColors.lightSurface1,
-        borderRadius: BorderRadius.circular(PremiumRadius.input),
-        border: Border.all(
-          color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-        ),
-      ),
-      child: Obx(() => DropdownButtonFormField<int>(
-            value: c.channel.value,
-            isExpanded: true,
-            borderRadius: BorderRadius.circular(14),
-            dropdownColor: isDark ? PremiumColors.darkCardElevated : PremiumColors.lightCard,
-            icon: Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-            ),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
-            selectedItemBuilder: (context) => List.generate(
-              channels.length,
-              (i) => PaymentChannelRow(channel: channels[i]),
-            ),
-            items: List.generate(
-              channels.length,
-              (i) => DropdownMenuItem<int>(
-                value: i,
-                child: PaymentChannelRow(channel: channels[i]),
-              ),
-            ),
-            onChanged: (v) {
-              if (v != null) c.channel.value = v;
-            },
-          )),
-    );
-  }
-
-  Widget _buildBalanceCard(BuildContext context, bool isDark) {
-    return PremiumCard(
-      padding: const EdgeInsets.all(16),
-      color: PremiumColors.winning.withOpacity(0.1),
-      border: Border.all(
-        color: PremiumColors.winning.withOpacity(0.3),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: PremiumColors.winning.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.trending_up_rounded,
-              color: PremiumColors.winning,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              'Your Withdrawal Balance is:',
-              style: PremiumTypography.body.copyWith(
-                color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-              ),
-            ),
-          ),
-          Obx(() => Text(
-                taka(SessionService.to.wallet.value.withdrawableBalance),
-                style: PremiumTypography.h4.copyWith(
-                  color: PremiumColors.winning,
-                  fontWeight: FontWeight.w800,
+              style: AppTextStyles.body1,
+              decoration: const InputDecoration(
+                labelText: 'Amount',
+                prefixIcon: Padding(
+                  padding: EdgeInsets.only(left: 16, right: 8),
+                  child: Text(AppConstants.currency,
+                      style: TextStyle(
+                          fontSize: 20, color: AppColors.textSecondary)),
                 ),
-              )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoticeCard(BuildContext context, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: PremiumColors.success.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(PremiumRadius.card),
-        border: Border.all(
-          color: PremiumColors.success.withOpacity(0.3),
-        ),
-      ),
-      child: Text(
-        MockData.withdrawNotice,
-        style: PremiumTypography.body.copyWith(
-          color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-          height: 1.6,
+                prefixIconConstraints: BoxConstraints(minWidth: 0),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+                'Min: ${taka(MockData.minWithdraw)}  ·  Max: ${taka(MockData.maxWithdraw)}',
+                style: AppTextStyles.body2),
+            const SizedBox(height: 13),
+            Obx(() => PrimaryButton(
+                  label: 'WITHDRAW',
+                  variant: ButtonVariant.red,
+                  loading: c.loading.value,
+                  onPressed: c.submit,
+                )),
+            const SizedBox(height: 12),
+            AppCard(
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.trending_up,
+                        color: AppColors.winningTeal),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                      child: Text('Your Withdrawal Balance is:',
+                          style: AppTextStyles.body1)),
+                  Obx(() => Text(
+                      taka(SessionService.to.wallet.value.withdrawableBalance),
+                      style: AppTextStyles.h3
+                          .copyWith(color: AppColors.winningTeal))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border:
+                    Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+              ),
+              child: Text(MockData.withdrawNotice,
+                  style: AppTextStyles.body1.copyWith(height: 1.6)),
+            ),
+          ],
         ),
       ),
     );

@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:get/get.dart';
 import '../../app/data/services/session_service.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../app/widgets/premium_back_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
 import '../matches/match_list_screen.dart';
 
+/// Shows matches the user has joined.
 class MyMatchesScreen extends StatefulWidget {
   const MyMatchesScreen({super.key});
 
@@ -23,129 +22,58 @@ class _MyMatchesScreenState extends State<MyMatchesScreen> {
   @override
   void initState() {
     super.initState();
+    // Pull the latest joined matches (carries room id/password + results).
     session.fetchMyMatches();
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'My Matches',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('My Matches')),
       body: Obx(() {
         final joined = session.joinedMatches;
         if (joined.isEmpty) {
-          return _buildEmptyState(context, isDark);
+          return const EmptyState(
+            icon: Icons.sports_esports_outlined,
+            title: 'Join a match to see it here',
+            hint: 'Your joined matches will appear here',
+          );
         }
         return ListView.separated(
           padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            MediaQuery.of(context).padding.bottom + 24,
-          ),
+              12, 12, 12, MediaQuery.of(context).padding.bottom + 24),
           itemCount: joined.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 16),
+          separatorBuilder: (_, __) => const SizedBox(height: 14),
           itemBuilder: (_, i) {
             final m = joined[i];
             return Column(
               children: [
-                PremiumMatchListCard(
+                MatchListCard(
                   match: m,
                   onTap: () => Get.toNamed(AppRoutes.matchInfo, arguments: m),
                 ),
                 if (m.roomId != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: _buildRoomInfoCard(context, isDark, m),
+                    padding: const EdgeInsets.only(top: 8),
+                    child: AppCard(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.meeting_room_outlined,
+                              color: AppColors.primary),
+                          const SizedBox(width: 10),
+                          Text(
+                              'Room ID: ${m.roomId}  •  Pass: ${m.roomPassword}',
+                              style: AppTextStyles.label),
+                        ],
+                      ),
+                    ),
                   ),
               ],
             );
           },
         );
       }),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, bool isDark) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.sports_esports_outlined,
-              size: 48,
-              color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Join a match to see it here',
-            style: PremiumTypography.h5.copyWith(
-              color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your joined matches will appear here',
-            style: PremiumTypography.body.copyWith(
-              color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoomInfoCard(BuildContext context, bool isDark, dynamic match) {
-    return PremiumCard(
-      padding: const EdgeInsets.all(16),
-      color: PremiumColors.primary.withOpacity(0.1),
-      border: Border.all(
-        color: PremiumColors.primary.withOpacity(0.3),
-        width: 1,
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: PremiumColors.primary.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.meeting_room_rounded,
-              color: PremiumColors.primary,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Room ID: ${match.roomId}  •  Pass: ${match.roomPassword}',
-              style: PremiumTypography.labelSmall.copyWith(
-                color: PremiumColors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

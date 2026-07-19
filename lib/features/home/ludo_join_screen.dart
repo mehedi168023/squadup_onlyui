@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:get/get.dart';
+import '../../app/core/app_constants.dart';
 import '../../app/core/app_toast.dart';
 import '../../app/data/models/heads_up_notification.dart';
 import '../../app/data/models/match_model.dart';
 import '../../app/data/services/notification_service.dart';
-import '../../app/core/app_constants.dart';
 import '../../app/data/services/session_service.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../design_system/components/inputs/premium_text_field.dart';
-import '../../app/widgets/premium_back_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
+/// Ludo join screen — match header, entry/prize cards and game-name entry.
 class LudoJoinScreen extends StatefulWidget {
   const LudoJoinScreen({super.key});
 
@@ -67,141 +65,111 @@ class _LudoJoinScreenState extends State<LudoJoinScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Join Match',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Join Match')),
       body: ResponsiveCenter(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            24,
-          ),
+          padding: const EdgeInsets.all(14),
           children: [
-            PremiumCard(
-              padding: PremiumSpacing.card,
+            _IosCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          'SPECIAL MATCH ${match.code}',
-                          style: PremiumTypography.h4.copyWith(
-                            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                        child: Text('SPECIAL MATCH ${match.code}',
+                            style: AppTextStyles.h2.copyWith(fontSize: 19)),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: PremiumColors.winning.withOpacity(0.5)),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(
+                              color: AppColors.matchesGreen
+                                  .withValues(alpha: 0.5)),
                         ),
-                        child: Text(
-                          'MATCH',
-                          style: PremiumTypography.labelSmall.copyWith(
-                            color: PremiumColors.winning,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        child: Text('MATCH',
+                            style: AppTextStyles.label.copyWith(
+                                color: AppColors.matchesGreen,
+                                fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today_rounded, size: 14, color: PremiumColors.winning),
-                      const SizedBox(width: 8),
-                      Text(
-                        fullDateWeekday(match.startTime),
-                        style: PremiumTypography.caption.copyWith(
-                          color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                        ),
-                      ),
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 14, color: AppColors.matchesGreen),
+                      const SizedBox(width: 6),
+                      Text(fullDateWeekday(match.startTime),
+                          style: AppTextStyles.label
+                              .copyWith(color: context.cTextDim)),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
                 Expanded(
-                  child: _buildPrizeCard(
-                    context,
-                    isDark,
-                    'এন্ট্রি ফি',
-                    taka(match.entryFee),
-                    Icons.confirmation_num_rounded,
-                    PremiumColors.primary,
+                  child: _PrizeCard(
+                    label: 'এন্ট্রি ফি',
+                    value: taka(match.entryFee),
+                    icon: Icons.confirmation_num_outlined,
+                    color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: _buildPrizeCard(
-                    context,
-                    isDark,
-                    'জয়ের পুরস্কার',
-                    taka(match.prize),
-                    Icons.emoji_events_rounded,
-                    PremiumColors.winning,
+                  child: _PrizeCard(
+                    label: 'জয়ের পুরস্কার',
+                    value: taka(match.prize),
+                    icon: Icons.emoji_events_outlined,
+                    color: AppColors.matchesGreen,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            PremiumCard(
-              padding: PremiumSpacing.card,
+            const SizedBox(height: AppSpacing.lg),
+            _IosCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.person_outline_rounded, color: PremiumColors.winning, size: 20),
+                      const Icon(Icons.person_outline,
+                          color: AppColors.matchesGreen, size: 20),
                       const SizedBox(width: 8),
-                      Text(
-                        'আপনার গেম নাম',
-                        style: PremiumTypography.h6.copyWith(
-                          color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                        ),
-                      ),
+                      Text('আপনার গেম নাম',
+                          style: AppTextStyles.h3.copyWith(fontSize: 16)),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  PremiumTextField(
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
                     controller: _name,
-                    hint: 'আপনার গেম নাম লিখুন',
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _join(),
+                    style: AppTextStyles.body1.copyWith(fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText: 'আপনার গেম নাম লিখুন',
+                      fillColor: context.cBgAlt,
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  PremiumButton.primary(
-                    text: 'জয়েন করুন',
-                    onPressed: _loading ? null : _join,
-                    isLoading: _loading,
-                    isFullWidth: true,
-                    customColor: PremiumColors.winning,
+                  const SizedBox(height: AppSpacing.lg),
+                  PrimaryButton(
+                    label: 'জয়েন করুন',
+                    variant: ButtonVariant.green,
+                    loading: _loading,
+                    onPressed: _join,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     'জয়েন করলে এন্ট্রি ফি আপনার ব্যালেন্স/উইন থেকে কাটা হবে।',
-                    style: PremiumTypography.caption.copyWith(
-                      color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                    ),
+                    style:
+                        AppTextStyles.body2.copyWith(color: context.cTextMuted),
                   ),
                 ],
               ),
@@ -211,51 +179,73 @@ class _LudoJoinScreenState extends State<LudoJoinScreen> {
       ),
     );
   }
+}
 
-  Widget _buildPrizeCard(
-    BuildContext context,
-    bool isDark,
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return PremiumCard(
-      padding: const EdgeInsets.all(16),
+class _PrizeCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  const _PrizeCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _IosCard(
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: PremiumTypography.caption.copyWith(
-                    color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  value,
-                  style: PremiumTypography.h4.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w800,
-                  ),
+                Text(label,
+                    style:
+                        AppTextStyles.label.copyWith(color: context.cTextDim)),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(value,
+                      style: AppTextStyles.h1
+                          .copyWith(fontSize: 24, color: color)),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Container(
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(PremiumRadius.md),
+              color: color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(icon, color: color, size: 22),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _IosCard extends StatelessWidget {
+  final Widget child;
+  const _IosCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.cSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: context.cBorder),
+      ),
+      child: child,
     );
   }
 }

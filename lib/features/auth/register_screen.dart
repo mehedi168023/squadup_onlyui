@@ -6,14 +6,12 @@ import '../../app/data/models/heads_up_notification.dart';
 import '../../app/data/services/notification_service.dart';
 import '../../app/data/services/session_service.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../design_system/components/inputs/premium_text_field.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/auth_field.dart';
 import '../../app/widgets/premium_back_button.dart';
-import '../../design_system/tokens/premium_shadows.dart';
+import '../../app/widgets/primary_button.dart';
 
 class RegisterController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -36,6 +34,7 @@ class RegisterController extends GetxController {
   }
 
   Future<void> submit() async {
+    // Inline validation surfaces field-level errors; bail if anything fails.
     if (!(formKey.currentState?.validate() ?? false)) return;
     loading.value = true;
     final ok = await SessionService.to.register(
@@ -66,113 +65,87 @@ class RegisterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.put(RegisterController());
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Create Account',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Create Account')),
       body: SafeArea(
         child: Form(
           key: c.formKey,
           child: SingleChildScrollView(
-            padding: PremiumSpacing.screenHorizontalOnly.add(
-              const EdgeInsets.symmetric(vertical: 20),
-            ),
+            padding: const EdgeInsets.all(14),
             child: Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark ? PremiumColors.darkSurface2 : PremiumColors.lightCard,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: isDark ? PremiumShadows.darkCard : PremiumShadows.lightCard,
-                  ),
-                  child: Image.asset(
-                    AppConstants.logo,
-                    width: 80,
-                    height: 80,
-                    cacheWidth: 240,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                PremiumTextField(
-                  controller: c.name,
-                  label: 'Full Name',
-                  hint: 'Enter your name',
-                  prefixIcon: const Icon(Icons.person_outline_rounded),
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 16),
-                PremiumTextField(
-                  controller: c.identifier,
-                  label: 'Phone or Email',
-                  hint: 'Enter your phone or email',
-                  prefixIcon: const Icon(Icons.alternate_email_rounded),
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 16),
-                PremiumPasswordField(
-                  controller: c.password,
+                Image.asset(AppConstants.logo,
+                    width: 80, height: 80, cacheWidth: 240),
+                const SizedBox(height: 13),
+                AuthField(
+                    label: 'Full Name',
+                    hint: 'Enter your name',
+                    icon: Icons.person_outline,
+                    controller: c.name,
+                    autofillHints: const [AutofillHints.name],
+                    validator: Validators.name),
+                const SizedBox(height: 11),
+                AuthField(
+                    label: 'Phone or Email',
+                    hint: 'Enter your phone or email',
+                    icon: Icons.alternate_email,
+                    controller: c.identifier,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [
+                      AutofillHints.email,
+                      AutofillHints.telephoneNumber
+                    ],
+                    validator: Validators.identifier),
+                const SizedBox(height: 11),
+                AuthField(
                   label: 'Password',
                   hint: 'At least 8 chars, 1 letter & 1 number',
+                  icon: Icons.lock_outline,
+                  controller: c.password,
+                  isPassword: true,
+                  autofillHints: const [AutofillHints.newPassword],
                   onChanged: (v) => c.passwordValue.value = v,
+                  validator: Validators.password,
                 ),
-                const SizedBox(height: 12),
-                Obx(() => _PremiumPasswordStrength(password: c.passwordValue.value)),
-                const SizedBox(height: 16),
-                PremiumPasswordField(
-                  controller: c.confirm,
-                  label: 'Confirm Password',
-                  hint: 'Re-enter your password',
-                ),
-                const SizedBox(height: 16),
-                PremiumTextField(
-                  controller: c.refer,
-                  label: 'Refer Code (Optional)',
-                  hint: 'Enter refer code if any',
-                  prefixIcon: const Icon(Icons.card_giftcard_rounded),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => c.submit(),
-                ),
-                const SizedBox(height: 24),
-                Obx(() => PremiumButton.primary(
-                      text: 'Register',
-                      onPressed: c.loading.value ? null : c.submit,
-                      isLoading: c.loading.value,
-                      isFullWidth: true,
-                    )),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Already have an account? ',
-                      style: PremiumTypography.body.copyWith(
-                        color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Get.back(),
-                      child: Text(
-                        'Login',
-                        style: PremiumTypography.bodyMedium.copyWith(
-                          color: PremiumColors.primary,
-                          decoration: TextDecoration.underline,
-                          decorationColor: PremiumColors.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 8),
+                Obx(() => _PasswordStrength(password: c.passwordValue.value)),
+                const SizedBox(height: 11),
+                AuthField(
+                    label: 'Confirm Password',
+                    hint: 'Re-enter your password',
+                    icon: Icons.lock_outline,
+                    controller: c.confirm,
+                    isPassword: true,
+                    validator: (v) =>
+                        Validators.confirmPassword(v, c.password.text)),
+                const SizedBox(height: 11),
+                AuthField(
+                    label: 'Refer Code',
+                    hint: 'Enter refer code if any',
+                    icon: Icons.card_giftcard_outlined,
+                    controller: c.refer,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: c.submit),
+                const SizedBox(height: 11),
+                Obx(() => PrimaryButton(
+                    label: 'Register',
+                    loading: c.loading.value,
+                    onPressed: c.submit)),
+                const SizedBox(height: 11),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Already have an account? ',
+                      style: AppTextStyles.body2
+                          .copyWith(color: context.cTextDim)),
+                  GestureDetector(
+                    onTap: () => Get.back(),
+                    child: Text('Login',
+                        style: AppTextStyles.title
+                            .copyWith(color: AppColors.primary, fontSize: 15)),
+                  ),
+                ],
+              ),
               ],
             ),
           ),
@@ -182,59 +155,35 @@ class RegisterScreen extends StatelessWidget {
   }
 }
 
-class _PremiumPasswordStrength extends StatelessWidget {
+/// Live password-strength meter: a colour bar + label that reacts as the user
+/// types, reinforcing the strength requirement.
+class _PasswordStrength extends StatelessWidget {
   final String password;
-  
-  const _PremiumPasswordStrength({required this.password});
+  const _PasswordStrength({required this.password});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     if (password.isEmpty) return const SizedBox.shrink();
-    
     final s = Validators.strength(password);
-    
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Row(
         children: [
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(PremiumRadius.full),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: s.score),
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                builder: (context, value, child) {
-                  return LinearProgressIndicator(
-                    value: value,
-                    minHeight: 6,
-                    backgroundColor: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightBorderSubtle,
-                    valueColor: AlwaysStoppedAnimation<Color>(s.color),
-                  );
-                },
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: LinearProgressIndicator(
+                value: s.score,
+                minHeight: 5,
+                backgroundColor: context.cBorder,
+                valueColor: AlwaysStoppedAnimation<Color>(s.color),
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 200),
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: child,
-              );
-            },
-            child: Text(
-              s.label,
-              style: PremiumTypography.labelSmall.copyWith(
-                color: s.color,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
+          const SizedBox(width: 10),
+          Text(s.label,
+              style: AppTextStyles.label
+                  .copyWith(color: s.color, fontWeight: FontWeight.w700)),
         ],
       ),
     );

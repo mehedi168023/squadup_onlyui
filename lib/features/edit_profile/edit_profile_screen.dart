@@ -3,12 +3,10 @@ import 'package:get/get.dart';
 import '../../app/core/app_toast.dart';
 import '../../app/core/validators.dart';
 import '../../app/data/services/session_service.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../design_system/components/inputs/premium_text_field.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/widgets/auth_field.dart';
 import '../../app/widgets/premium_back_button.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
 class EditProfileController extends GetxController {
@@ -74,122 +72,88 @@ class EditProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.put(EditProfileController());
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Edit Profile',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Edit Profile')),
       body: ResponsiveCenter(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            24,
-          ),
+          padding: const EdgeInsets.all(14),
           children: [
-            Text(
-              'BASIC INFORMATION',
-              style: PremiumTypography.labelLarge.copyWith(
-                color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
             Form(
               key: c.profileKey,
-              child: Column(
-                children: [
-                  PremiumTextField(
-                    controller: c.name,
-                    label: 'Full Name',
-                    hint: 'Your name',
-                    prefixIcon: const Icon(Icons.person_outline_rounded),
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => c.updateProfile(),
-                  ),
-                  const SizedBox(height: 16),
-                  PremiumTextField(
-                    controller: c.email,
-                    label: 'Email Address',
-                    hint: 'Email',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    enabled: false,
-                  ),
-                  const SizedBox(height: 16),
-                  PremiumTextField(
-                    controller: c.phone,
-                    label: 'Phone Number',
-                    hint: 'Phone',
-                    prefixIcon: const Icon(Icons.phone_outlined),
-                    enabled: false,
-                  ),
-                ],
-              ),
+              child: AuthField(
+                  label: 'Full Name',
+                  hint: 'Your name',
+                  icon: Icons.person_outline,
+                  controller: c.name,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.name],
+                  validator: Validators.name,
+                  onSubmitted: c.updateProfile),
             ),
-            const SizedBox(height: 20),
-            Obx(() => PremiumButton.primary(
-                  text: 'UPDATE PROFILE',
-                  onPressed: c.savingProfile.value ? null : c.updateProfile,
-                  isLoading: c.savingProfile.value,
-                  isFullWidth: true,
-                )),
-            const SizedBox(height: 40),
-            Divider(
-              color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-              thickness: 1,
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'CHANGE PASSWORD',
-              style: PremiumTypography.labelLarge.copyWith(
-                color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            AuthField(
+                label: 'Email Address',
+                hint: 'Email',
+                icon: Icons.email_outlined,
+                controller: c.email,
+                locked: true),
+            const SizedBox(height: 12),
+            AuthField(
+                label: 'Phone Number',
+                hint: 'Phone',
+                icon: Icons.phone_outlined,
+                controller: c.phone,
+                locked: true),
+            const SizedBox(height: 11),
+            Obx(() => PrimaryButton(
+                label: 'UPDATE PROFILE',
+                loading: c.savingProfile.value,
+                onPressed: c.updateProfile)),
+            const SizedBox(height: 30),
+            Divider(color: context.cBorder),
+            const SizedBox(height: 13),
             Form(
               key: c.passwordKey,
               child: Column(
                 children: [
-                  PremiumPasswordField(
-                    controller: c.current,
+                  AuthField(
                     label: 'Current Password',
                     hint: 'Enter current password',
+                    icon: Icons.lock_outline,
+                    controller: c.current,
+                    isPassword: true,
+                    validator: Validators.loginPassword,
                   ),
-                  const SizedBox(height: 16),
-                  PremiumPasswordField(
-                    controller: c.next,
+                  const SizedBox(height: 12),
+                  AuthField(
                     label: 'New Password',
                     hint: 'At least 8 chars, 1 letter & 1 number',
+                    icon: Icons.lock_outline,
+                    controller: c.next,
+                    isPassword: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    validator: Validators.password,
                   ),
-                  const SizedBox(height: 16),
-                  PremiumPasswordField(
-                    controller: c.confirm,
+                  const SizedBox(height: 12),
+                  AuthField(
                     label: 'Confirm New Password',
                     hint: 'Confirm new password',
-                    onSubmitted: (_) => c.changePassword(),
+                    icon: Icons.lock_outline,
+                    controller: c.confirm,
+                    isPassword: true,
+                    textInputAction: TextInputAction.done,
+                    validator: (v) => Validators.confirmPassword(v, c.next.text),
+                    onSubmitted: c.changePassword,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            Obx(() => PremiumButton.primary(
-                  text: 'CHANGE PASSWORD',
-                  onPressed: c.savingPassword.value ? null : c.changePassword,
-                  isLoading: c.savingPassword.value,
-                  isFullWidth: true,
-                  customColor: PremiumColors.danger,
+            const SizedBox(height: 11),
+            Obx(() => PrimaryButton(
+                  label: 'CHANGE PASSWORD',
+                  variant: ButtonVariant.red,
+                  loading: c.savingPassword.value,
+                  onPressed: c.changePassword,
                 )),
           ],
         ),

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../app/core/app_toast.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../app/widgets/premium_back_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
+/// Win-screenshot ("evidence") upload: attach a screenshot, paste the Room ID
+/// and submit. Opened from the Ludo match-list header.
 class UploadEvidenceScreen extends StatefulWidget {
   const UploadEvidenceScreen({super.key});
 
@@ -28,6 +28,8 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
     super.dispose();
   }
 
+  // Image-picking is simulated here (no native picker dependency). Wire up
+  // image_picker later to attach a real file.
   void _pickImage() {
     setState(() => _attached = true);
     AppToast.success('Screenshot attached');
@@ -59,138 +61,102 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Upload Evidence',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Upload Evidence')),
       body: ResponsiveCenter(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            24,
-          ),
+          padding: const EdgeInsets.all(16),
           children: [
-            _PremiumUploadBox(attached: _attached, onTap: _pickImage),
-            const SizedBox(height: 24),
-            PremiumCard(
-              padding: const EdgeInsets.all(4),
-              color: isDark ? PremiumColors.darkCard : PremiumColors.lightCard,
-              child: TextField(
-                controller: _roomId,
-                style: PremiumTypography.body.copyWith(
-                  color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Room ID',
-                  hintStyle: PremiumTypography.body.copyWith(
-                    color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                  ),
-                  filled: false,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  suffixIcon: IconButton(
-                    tooltip: 'Paste',
-                    onPressed: _paste,
-                    icon: const Icon(Icons.content_paste_rounded, color: PremiumColors.primary),
-                  ),
+            _UploadBox(attached: _attached, onTap: _pickImage),
+            const SizedBox(height: AppSpacing.lg),
+            TextField(
+              controller: _roomId,
+              style: AppTextStyles.body1.copyWith(fontSize: 16),
+              decoration: InputDecoration(
+                hintText: 'Room ID',
+                fillColor: context.cSurface,
+                suffixIcon: IconButton(
+                  tooltip: 'Paste',
+                  onPressed: _paste,
+                  icon: const Icon(Icons.content_paste_rounded,
+                      color: AppColors.primary),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            PremiumButton.primary(
-              text: 'SUBMIT',
-              icon: const Icon(Icons.check_rounded),
+            const SizedBox(height: AppSpacing.lg),
+            PrimaryButton(
+              label: 'SUBMIT',
+              icon: Icons.check_rounded,
+              variant: ButtonVariant.green,
               onPressed: _submit,
-              isFullWidth: true,
-              customColor: PremiumColors.winning,
             ),
-            const SizedBox(height: 24),
-            _buildNote(isDark, 'স্ক্রিনশট আপলোড না করলে আপনি প্রাইজ পাবেন না।'),
-            const SizedBox(height: 12),
-            _buildNote(isDark, 'উলটা পালটা ছবি/স্ক্রিনশট আপলোড করলে আপনাকে এপ থেকে চিরকালের জন্য ব্যান করে দেওয়া হবে।'),
-            const SizedBox(height: 12),
-            _buildNote(isDark, 'স্ক্রিনশট আপলোড করেও বিজয়ী পুরস্কার না পেলে সাপোর্টে যোগাযোগ করুন।'),
+            const SizedBox(height: AppSpacing.xl),
+            _note(context, 'স্ক্রিনশট আপলোড না করলে আপনি প্রাইজ পাবেন না।'),
+            _note(context,
+                'উলটা পালটা ছবি/স্ক্রিনশট আপলোড করলে আপনাকে এপ থেকে চিরকালের জন্য ব্যান করে দেওয়া হবে।'),
+            _note(context,
+                'স্ক্রিনশট আপলোড করেও বিজয়ী পুরস্কার না পেলে সাপোর্টে যোগাযোগ করুন।'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNote(bool isDark, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 6, right: 12),
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: PremiumColors.winning,
-            shape: BoxShape.circle,
+  Widget _note(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 6, right: 10),
+            child: Icon(Icons.circle, size: 7, color: AppColors.matchesGreen),
           ),
-        ),
-        Expanded(
-          child: Text(
-            text,
-            style: PremiumTypography.body.copyWith(
-              color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-              height: 1.5,
-            ),
+          Expanded(
+            child: Text(text,
+                style: AppTextStyles.body1
+                    .copyWith(color: context.cTextDim, height: 1.6)),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _PremiumUploadBox extends StatelessWidget {
+class _UploadBox extends StatelessWidget {
   final bool attached;
   final VoidCallback onTap;
-  const _PremiumUploadBox({required this.attached, required this.onTap});
+  const _UploadBox({required this.attached, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final Color color = attached ? PremiumColors.winning : PremiumColors.primary;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final color = attached ? AppColors.matchesGreen : AppColors.primary;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 200,
+        height: 190,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(PremiumRadius.card),
-          border: Border.all(color: color.withOpacity(0.5), width: 2),
+          color: context.cSurface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: color.withValues(alpha: 0.6), width: 1.6),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              attached ? Icons.check_circle_rounded : Icons.add_photo_alternate_outlined,
-              size: 64,
-              color: color,
-            ),
-            const SizedBox(height: 16),
+                attached
+                    ? Icons.check_circle_rounded
+                    : Icons.add_photo_alternate_outlined,
+                size: 56,
+                color: color),
+            const SizedBox(height: AppSpacing.md),
             Text(
-              attached ? 'Screenshot attached — tap to change' : 'Click here to upload image',
-              style: PremiumTypography.bodyMedium.copyWith(
-                color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-              ),
-            ),
+                attached
+                    ? 'Screenshot attached — tap to change'
+                    : 'Click here to upload image',
+                style: AppTextStyles.title
+                    .copyWith(fontSize: 14, color: context.cTextDim)),
           ],
         ),
       ),

@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:get/get.dart';
 import '../../app/core/app_constants.dart';
 import '../../app/core/app_sheets.dart';
 import '../../app/data/models/order_model.dart';
 import '../../app/data/services/session_service.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../app/widgets/premium_back_button.dart';
-import '../../design_system/tokens/premium_shadows.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_shadows.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
 
+/// Order History — a transparent, trustworthy record of every top-up and
+/// product purchase. Premium summary header, kind filters, status-tagged cards
+/// and a tappable receipt for each order.
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
 
@@ -20,106 +22,56 @@ class OrderHistoryScreen extends StatefulWidget {
 }
 
 class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+  // null = All; otherwise filter by kind.
   OrderKind? _filter;
 
   @override
   Widget build(BuildContext context) {
     final session = SessionService.to;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        centerTitle: true,
-        title: Text(
-          'My Orders',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('My Orders'), centerTitle: true),
       body: Obx(() {
         final all = session.orders;
         if (all.isEmpty) {
-          return _buildEmptyState(context, isDark);
+          return const EmptyState(
+            icon: Icons.receipt_long_outlined,
+            title: 'No orders yet',
+            hint: 'Your top-ups & purchases will appear here',
+          );
         }
         final list = _filter == null
             ? all.toList()
             : all.where((o) => o.kind == _filter).toList();
         return ListView(
-          padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            MediaQuery.of(context).padding.bottom + 28,
-          ),
+          padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md,
+              AppSpacing.md, MediaQuery.of(context).padding.bottom + 28),
           children: [
-            _PremiumStatsHeader(orders: all),
-            const SizedBox(height: 20),
-            _PremiumFilters(
+            _StatsHeader(orders: all),
+            const SizedBox(height: AppSpacing.lg),
+            _Filters(
               current: _filter,
               onChanged: (k) => setState(() => _filter = k),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.md),
             if (list.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 40),
-                child: Text(
-                  'No ${_filter == OrderKind.topup ? 'top-ups' : 'products'} yet',
-                  textAlign: TextAlign.center,
-                  style: PremiumTypography.body.copyWith(
-                    color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                  ),
-                ),
+                child: Text('No ${_filter == OrderKind.topup ? 'top-ups' : 'products'} yet',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.body1
+                        .copyWith(color: context.cTextDim)),
               )
             else
               ...list.map((o) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _PremiumOrderCard(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: _OrderCard(
                         order: o, onTap: () => _showReceipt(context, o)),
                   )),
-            const SizedBox(height: 8),
-            const _PremiumTrustFooter(),
+            const SizedBox(height: AppSpacing.sm),
+            const _TrustFooter(),
           ],
         );
       }),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, bool isDark) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.receipt_long_rounded,
-              size: 48,
-              color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'No orders yet',
-            style: PremiumTypography.h5.copyWith(
-              color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your top-ups & purchases will appear here',
-            style: PremiumTypography.body.copyWith(
-              color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -127,309 +79,273 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     AppSheet.show(
       title: 'Order Receipt',
       subtitle: o.id,
-      child: _PremiumReceipt(order: o),
+      child: _Receipt(order: o),
     );
   }
 }
 
-class _PremiumStatsHeader extends StatelessWidget {
+/// Gradient summary: order count + total spent (social proof of activity).
+class _StatsHeader extends StatelessWidget {
   final List<OrderModel> orders;
-  const _PremiumStatsHeader({required this.orders});
+  const _StatsHeader({required this.orders});
 
   @override
   Widget build(BuildContext context) {
     final total = orders.fold<double>(0, (s, o) => s + o.amount);
-    
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: PremiumColors.primaryGradient,
-        borderRadius: BorderRadius.circular(PremiumRadius.card),
-        boxShadow: PremiumShadows.primaryGlow,
+        gradient: const LinearGradient(
+          colors: AppColors.blueGradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: AppShadows.glow(AppColors.primary, opacity: 0.3),
       ),
       child: Row(
         children: [
-          _buildStat('${orders.length}', 'Total orders', Icons.receipt_long_rounded),
+          _stat('${orders.length}', 'Total orders', Icons.receipt_long_rounded),
           Container(
-            width: 1,
-            height: 40,
-            color: Colors.white.withOpacity(0.25),
-          ),
-          _buildStat(taka(total), 'Total spent', Icons.payments_rounded),
+              width: 1,
+              height: 38,
+              color: Colors.white.withValues(alpha: 0.25)),
+          _stat(taka(total), 'Total spent', Icons.payments_rounded),
         ],
       ),
     );
   }
 
-  Widget _buildStat(String value, String label, IconData icon) {
+  Widget _stat(String value, String label, IconData icon) {
     return Expanded(
       child: Column(
         children: [
-          Icon(icon, color: Colors.white.withOpacity(0.9), size: 22),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: PremiumTypography.h4.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: PremiumTypography.labelSmall.copyWith(
-              color: Colors.white.withOpacity(0.85),
-            ),
-          ),
+          Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 20),
+          const SizedBox(height: 6),
+          Text(value,
+              style: AppTextStyles.h2.copyWith(color: Colors.white, fontSize: 20)),
+          const SizedBox(height: 2),
+          Text(label,
+              style: AppTextStyles.label
+                  .copyWith(color: Colors.white.withValues(alpha: 0.85))),
         ],
       ),
     );
   }
 }
 
-class _PremiumFilters extends StatelessWidget {
+class _Filters extends StatelessWidget {
   final OrderKind? current;
   final ValueChanged<OrderKind?> onChanged;
-  const _PremiumFilters({required this.current, required this.onChanged});
+  const _Filters({required this.current, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Row(
       children: [
-        _buildChip(context, isDark, 'All', null),
-        const SizedBox(width: 10),
-        _buildChip(context, isDark, 'Top-ups', OrderKind.topup),
-        const SizedBox(width: 10),
-        _buildChip(context, isDark, 'Products', OrderKind.product),
+        _chip(context, 'All', null),
+        const SizedBox(width: 8),
+        _chip(context, 'Top-ups', OrderKind.topup),
+        const SizedBox(width: 8),
+        _chip(context, 'Products', OrderKind.product),
       ],
     );
   }
 
-  Widget _buildChip(BuildContext context, bool isDark, String label, OrderKind? kind) {
+  Widget _chip(BuildContext context, String label, OrderKind? kind) {
     final active = current == kind;
-    
     return GestureDetector(
       onTap: () => onChanged(kind),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        duration: AppDurations.fast,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          color: active
-              ? PremiumColors.primary
-              : (isDark ? PremiumColors.darkCard : PremiumColors.lightCard),
-          borderRadius: BorderRadius.circular(20),
+          color: active ? AppColors.primary : context.cSurface,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
-            color: active
-                ? PremiumColors.primary
-                : (isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder),
-          ),
-          boxShadow: active ? PremiumShadows.primaryGlow : null,
+              color: active ? AppColors.primary : context.cBorder),
         ),
-        child: Text(
-          label,
-          style: PremiumTypography.labelSmall.copyWith(
-            color: active
-                ? Colors.white
-                : (isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        child: Text(label,
+            style: AppTextStyles.label.copyWith(
+                color: active ? Colors.white : context.cTextDim,
+                fontWeight: FontWeight.w700)),
       ),
     );
   }
 }
-class _PremiumOrderCard extends StatelessWidget {
+
+class _OrderCard extends StatelessWidget {
   final OrderModel order;
   final VoidCallback onTap;
-  const _PremiumOrderCard({required this.order, required this.onTap});
+  const _OrderCard({required this.order, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = order.accent;
-    
-    return PremiumCard(
+    return AppCard(
+      padding: const EdgeInsets.all(12),
       onTap: onTap,
-      padding: const EdgeInsets.all(14),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 46,
+            height: 46,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: accent.withOpacity(0.35)),
+              color: accent.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: accent.withValues(alpha: 0.35)),
             ),
-            child: Icon(order.icon, color: accent, size: 24),
+            child: Icon(order.icon, color: accent, size: 23),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  order.title,
-                  style: PremiumTypography.bodyMedium.copyWith(
-                    color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${order.kindLabel} • ${order.subtitle}',
-                  style: PremiumTypography.caption.copyWith(
-                    color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                  ),
-                ),
+                Text(order.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body1.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: context.cText)),
+                const SizedBox(height: 3),
+                Text('${order.method} • ${shortDateTime(order.date)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body2.copyWith(color: context.cTextDim)),
               ],
             ),
           ),
-          _buildStatusBadge(order),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(taka(order.amount),
+                  style: AppTextStyles.title
+                      .copyWith(fontSize: 15, color: context.cText)),
+              const SizedBox(height: 6),
+              StatusPill(
+                  text: order.statusLabel,
+                  color: order.statusColor,
+                  showDot: false),
+            ],
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(OrderModel order) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: order.statusColor.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: order.statusColor.withOpacity(0.3)),
-      ),
-      child: Text(
-        order.statusLabel,
-        style: PremiumTypography.labelSmall.copyWith(
-          color: order.statusColor,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }
 }
 
-class _PremiumReceipt extends StatelessWidget {
+class _Receipt extends StatelessWidget {
   final OrderModel order;
-  const _PremiumReceipt({required this.order});
+  const _Receipt({required this.order});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = order.accent;
-    
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            order.title,
-            style: PremiumTypography.h4.copyWith(
-              color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${order.kindLabel} • ${order.subtitle}',
-            style: PremiumTypography.caption.copyWith(
-              color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              width: 64,
-              height: 64,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Amount + status hero.
+        Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: accent.withOpacity(0.35)),
+                color: accent.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent.withValues(alpha: 0.35)),
               ),
-              child: Icon(order.icon, color: accent, size: 28),
+              child: Icon(order.icon, color: accent, size: 26),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(order.title,
+                      style: AppTextStyles.title
+                          .copyWith(fontSize: 16, color: context.cText)),
+                  const SizedBox(height: 3),
+                  Text('${order.kindLabel} • ${order.subtitle}',
+                      style: AppTextStyles.body2
+                          .copyWith(color: context.cTextDim)),
+                ],
+              ),
+            ),
+            StatusPill(text: order.statusLabel, color: order.statusColor),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: accent.withValues(alpha: 0.25)),
           ),
-          const SizedBox(height: 16),
-          Center(
-            child: Column(
-              children: [
-                Text(
-                  'Amount',
-                  style: PremiumTypography.caption.copyWith(
-                    color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  taka(order.amount),
-                  style: PremiumTypography.currencyMedium.copyWith(
-                    color: accent,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
+          child: Column(
+            children: [
+              Text('Amount', style: AppTextStyles.label.copyWith(color: context.cTextDim)),
+              const SizedBox(height: 2),
+              Text(taka(order.amount),
+                  style: AppTextStyles.h1.copyWith(color: accent, fontSize: 26)),
+            ],
           ),
-          const SizedBox(height: 20),
-          ...order.details.entries.map((e) => _buildRow(context, isDark, e.key, e.value)),
-          _buildRow(context, isDark, 'Order ID', order.id),
-          _buildRow(context, isDark, 'Date', fullDateWeekday(order.date)),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: PremiumColors.success.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(PremiumRadius.md),
-              border: Border.all(color: PremiumColors.success.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.verified_rounded, color: PremiumColors.success, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Verified & recorded by SquadUp. Keep this receipt for your reference.',
-                    style: PremiumTypography.bodySmall.copyWith(
-                      color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        ...order.details.entries.map((e) => _row(context, e.key, e.value)),
+        _row(context, 'Order ID', order.id),
+        _row(context, 'Date', fullDateWeekday(order.date)),
+        const SizedBox(height: AppSpacing.lg),
+        // Trust line.
+        Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.success.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              const Icon(Icons.verified_rounded,
+                  color: AppColors.success, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('Verified & recorded by SquadUp. Keep this receipt for your reference.',
+                    style: AppTextStyles.body2.copyWith(color: context.cText)),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildRow(BuildContext context, bool isDark, String label, String value) {
+  Widget _row(BuildContext context, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
-            child: Text(
-              label,
-              style: PremiumTypography.caption.copyWith(
-                color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-              ),
-            ),
+            child: Text(label,
+                style: AppTextStyles.body2.copyWith(color: context.cTextDim)),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: PremiumTypography.bodyMedium.copyWith(
-                color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-              ),
-            ),
+            child: Text(value,
+                textAlign: TextAlign.right,
+                style: AppTextStyles.body1.copyWith(
+                    color: context.cText, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -437,46 +353,45 @@ class _PremiumReceipt extends StatelessWidget {
   }
 }
 
-class _PremiumTrustFooter extends StatelessWidget {
-  const _PremiumTrustFooter();
+/// A reassurance strip at the bottom of the history — reinforces that purchases
+/// are safe and traceable.
+class _TrustFooter extends StatelessWidget {
+  const _TrustFooter();
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return PremiumCard(
-      padding: const EdgeInsets.all(16),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: context.cSurface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: context.cBorder),
+      ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 38,
+            height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: PremiumColors.success.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.success.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(11),
             ),
-            child: const Icon(Icons.shield_rounded, color: PremiumColors.success, size: 22),
+            child: const Icon(Icons.shield_rounded,
+                color: AppColors.success, size: 20),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Every order is safe & traceable',
-                  style: PremiumTypography.bodyMedium.copyWith(
-                    color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Secure payments • Instant top-ups • Real support',
-                  style: PremiumTypography.caption.copyWith(
-                    color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                  ),
-                ),
+                Text('Every order is safe & traceable',
+                    style: AppTextStyles.body1.copyWith(
+                        fontWeight: FontWeight.w700, color: context.cText)),
+                const SizedBox(height: 2),
+                Text('Secure payments • Instant top-ups • Real support',
+                    style:
+                        AppTextStyles.body2.copyWith(color: context.cTextDim)),
               ],
             ),
           ),

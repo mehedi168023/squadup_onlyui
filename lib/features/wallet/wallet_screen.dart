@@ -5,17 +5,13 @@ import '../../app/core/app_constants.dart';
 import '../../app/data/models/wallet_model.dart';
 import '../../app/data/services/session_service.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/animations/premium_curves.dart';
-import '../../design_system/animations/premium_durations.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_shadows.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
 import '../../app/widgets/common_widgets.dart';
 import '../../app/widgets/premium_back_button.dart';
-import '../../design_system/tokens/premium_shadows.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
 class WalletScreen extends StatelessWidget {
@@ -24,417 +20,394 @@ class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = SessionService.to;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
       appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'My Wallet',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+          leading: const PremiumBackButton(), title: const Text('My Wallet')),
       body: ResponsiveCenter(
         child: ListView(
           padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            MediaQuery.of(context).padding.bottom + 24,
-          ),
+              12, 12, 12, MediaQuery.of(context).padding.bottom + 24),
           children: [
-            Obx(() => _PremiumBalanceHero(wallet: session.wallet.value)),
-            const SizedBox(height: 24),
-            _buildSectionHeader(
-              context,
-              isDark,
-              'RECENT ACTIVITY',
-              onTapSeeAll: () => Get.toNamed(AppRoutes.transactions),
+            Obx(() => _BalanceHero(wallet: session.wallet.value)),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                const Expanded(child: SectionHeader('RECENT ACTIVITY')),
+                GestureDetector(
+                  onTap: () => Get.toNamed(AppRoutes.transactions),
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      Text('See all',
+                          style: AppTextStyles.label
+                              .copyWith(color: AppColors.primary)),
+                      const Icon(Icons.chevron_right_rounded,
+                          size: 18, color: AppColors.primary),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Obx(() {
               final txs = session.transactions.take(3).toList();
               if (txs.isEmpty) {
-                return _buildEmptyState(context, isDark);
+                return AppCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.receipt_long_outlined,
+                          color: context.cTextMuted, size: 20),
+                      const SizedBox(width: 12),
+                      Text('No transactions yet',
+                          style: AppTextStyles.body1
+                              .copyWith(color: context.cTextDim)),
+                    ],
+                  ),
+                );
               }
               return Column(
                 children: [
                   for (final tx in txs) ...[
                     _MiniTxRow(tx: tx),
-                    if (tx != txs.last) const SizedBox(height: 12),
+                    if (tx != txs.last) const SizedBox(height: 10),
                   ],
                 ],
               );
             }),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, isDark, 'QUICK ACTIONS'),
-            const SizedBox(height: 16),
-            _buildQuickAction(
-              context,
-              isDark,
-              icon: Icons.receipt_long_rounded,
+            const SizedBox(height: 18),
+            const SectionHeader('QUICK ACTIONS'),
+            const SizedBox(height: 12),
+            ListNavTile(
+              icon: Icons.receipt_long_outlined,
               label: 'Transaction History',
               subtitle: 'View all your transactions',
-              color: PremiumColors.primary,
               onTap: () => Get.toNamed(AppRoutes.transactions),
             ),
             const SizedBox(height: 12),
-            _buildQuickAction(
-              context,
-              isDark,
-              icon: Icons.shopping_bag_rounded,
+            ListNavTile(
+              icon: Icons.shopping_bag_outlined,
               label: 'Order History',
               subtitle: 'Top-ups & purchases',
-              color: PremiumColors.winning,
+              iconColor: AppColors.winningTeal,
               onTap: () => Get.toNamed(AppRoutes.orders),
             ),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, isDark, 'HOW TO GUIDE'),
-            const SizedBox(height: 16),
-            _buildGuide(
-              context,
-              isDark,
-              Icons.add_card_rounded,
-              'How to Add Money?',
-              const [
-                'Open the Wallet and tap "Add Money".',
-                'Enter the amount you want to deposit.',
-                'Tap "Proceed to Payment" and complete it on the secure gateway.',
-                'Your balance is credited instantly after a successful payment.',
-              ],
-            ),
+            const SizedBox(height: 18),
+            const SectionHeader('HOW TO GUIDE'),
             const SizedBox(height: 12),
-            _buildGuide(
-              context,
-              isDark,
-              Icons.sports_esports_rounded,
-              'How to Join a Match?',
-              const [
-                'Pick a game mode from the Home screen.',
-                'Open a match to review the rules and prize pool.',
-                'Tap "Join Match", choose your slot type and enter player names.',
-                'The entry fee is deducted and your slot is confirmed.',
-              ],
-            ),
+            _guide(context, Icons.add_card, 'How to Add Money?', const [
+              'Open the Wallet and tap “Add Money”.',
+              'Enter the amount you want to deposit.',
+              'Tap “Proceed to Payment” and complete it on the secure gateway.',
+              'Your balance is credited instantly after a successful payment.',
+            ]),
             const SizedBox(height: 12),
-            _buildGuide(
-              context,
-              isDark,
-              Icons.account_balance_rounded,
-              'How to Withdraw?',
-              const [
-                'Open the Wallet and tap "Withdraw".',
-                'Choose bKash or Nagad and enter your wallet number.',
-                'Enter an amount between ৳105 and ৳10000.',
-                'Submit — your request is processed within 24 hours.',
-              ],
-            ),
+            _guide(context, Icons.sports_esports_outlined,
+                'How to Join a Match?', const [
+              'Pick a game mode from the Home screen.',
+              'Open a match to review the rules and prize pool.',
+              'Tap “Join Match”, choose your slot type and enter player names.',
+              'The entry fee is deducted and your slot is confirmed.',
+            ]),
+            const SizedBox(height: 12),
+            _guide(context, Icons.account_balance_outlined,
+                'How to Withdraw?', const [
+              'Open the Wallet and tap “Withdraw”.',
+              'Choose bKash or Nagad and enter your wallet number.',
+              'Enter an amount between ৳105 and ৳10000.',
+              'Submit — your request is processed to the selected channel.',
+            ]),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(
-    BuildContext context,
-    bool isDark,
-    String title, {
-    VoidCallback? onTapSeeAll,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: PremiumTypography.labelLarge.copyWith(
-              color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-              letterSpacing: 1.2,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        if (onTapSeeAll != null)
-          GestureDetector(
-            onTap: onTapSeeAll,
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                Text(
-                  'See all',
-                  style: PremiumTypography.label.copyWith(
-                    color: PremiumColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: PremiumColors.primary,
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, bool isDark) {
-    return PremiumCard(
-      padding: PremiumSpacing.card,
+  Widget _guide(
+      BuildContext context, IconData icon, String title, List<String> steps) {
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      onTap: () => _openGuide(icon, title, steps),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-              color: (isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3),
+              color: context.cSurfaceAlt,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.receipt_long_rounded,
-              color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-              size: 20,
-            ),
+            child: Icon(icon, color: context.cTextDim, size: 22),
           ),
-          const SizedBox(width: 12),
-          Text(
-            'No transactions yet',
-            style: PremiumTypography.body.copyWith(
-              color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickAction(
-    BuildContext context,
-    bool isDark, {
-    required IconData icon,
-    required String label,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return PremiumCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              child: Text(title,
+                  style: AppTextStyles.title.copyWith(fontSize: 15))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: PremiumTypography.bodyMedium.copyWith(
-                    color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: PremiumTypography.caption.copyWith(
-                    color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                  ),
-                ),
+                const Icon(Icons.menu_book_rounded,
+                    size: 15, color: AppColors.primary),
+                const SizedBox(width: 4),
+                Text('Guide',
+                    style:
+                        AppTextStyles.label.copyWith(color: AppColors.primary)),
               ],
             ),
           ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildGuide(
-    BuildContext context,
-    bool isDark,
-    IconData icon,
-    String title,
-    List<String> steps,
-  ) {
-    return PremiumCard(
-      onTap: () => AppSheet.show(title: title, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: steps.map((s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s))).toList())),
-      padding: const EdgeInsets.all(16),
-      child: Row(
+  static void _openGuide(IconData icon, String title, List<String> steps) {
+    AppSheet.show(
+      title: title,
+      subtitle: 'Follow these steps:',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: PremiumColors.primary.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: PremiumColors.primary, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              style: PremiumTypography.bodyMedium.copyWith(
-                color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
+          for (int i = 0; i < steps.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.16),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text('${i + 1}',
+                        style: AppTextStyles.title
+                            .copyWith(color: AppColors.primary, fontSize: 13)),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(steps[i],
+                        style: AppTextStyles.body1.copyWith(height: 1.5)),
+                  ),
+                ],
               ),
             ),
-          ),
-          Icon(
-            Icons.help_outline_rounded,
-            color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-          ),
         ],
       ),
     );
   }
 }
 
-class _PremiumBalanceHero extends StatelessWidget {
+/// Premium credit-card style wallet hero: deep gradient + depth glow, a brand
+/// wordmark, a metallic chip & contactless mark, an animated light-sweep, a
+/// masked card number (from the user's id), a balance privacy toggle, glass
+/// sub-balance tiles and the Add/Withdraw actions.
+class _BalanceHero extends StatefulWidget {
   final WalletModel wallet;
-  
-  const _PremiumBalanceHero({required this.wallet});
+  const _BalanceHero({required this.wallet});
+
+  @override
+  State<_BalanceHero> createState() => _BalanceHeroState();
+}
+
+class _BalanceHeroState extends State<_BalanceHero> {
+  bool _hidden = false;
+
+  String get _maskedNumber {
+    final id = SessionService.to.user.value?.id ?? 0;
+    final last = id.toString().padLeft(4, '0');
+    final tail = last.substring(last.length - 4);
+    return '••••  ••••  ••••  $tail';
+  }
+
+  String get _holder =>
+      (SessionService.to.user.value?.name ?? 'SquadUp Member').toUpperCase();
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: PremiumDurations.slow,
-      curve: PremiumCurves.emphasized,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 20 * (1 - value)),
-            child: child,
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: PremiumColors.primaryGradient,
-          borderRadius: BorderRadius.circular(PremiumRadius.cardLarge),
-          boxShadow: PremiumShadows.primaryGlow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final wallet = widget.wallet;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: AppShadows.glow(AppColors.primary, opacity: 0.32),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Balance',
-                      style: PremiumTypography.caption.copyWith(
-                        color: Colors.white.withOpacity(0.85),
-                        fontSize: 13,
+            // Base gradient.
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF2E55C4),
+                      Color(0xFF1B2E63),
+                      Color(0xFF0E1830),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+            ),
+            // Soft depth circles.
+            Positioned(
+                top: -50,
+                right: -30,
+                child: _circle(110, Colors.white.withValues(alpha: 0.06))),
+            Positioned(
+                bottom: -55,
+                left: -40,
+                child:
+                    _circle(140, AppColors.winningTeal.withValues(alpha: 0.07))),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet_rounded,
+                          color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Text('SquadUp Wallet',
+                          style: AppTextStyles.title.copyWith(
+                              color: Colors.white,
+                              fontSize: 14,
+                              letterSpacing: 0.4)),
+                      const Spacer(),
+                      _pill(Icons.lock_rounded, 'Secured'),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // Chip + contactless + PREMIUM tag (one compact row).
+                  Row(
+                    children: [
+                      _chip(),
+                      const SizedBox(width: 9),
+                      Transform.rotate(
+                        angle: 1.5708,
+                        child: Icon(Icons.wifi_rounded,
+                            size: 17,
+                            color: Colors.white.withValues(alpha: 0.8)),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 800),
-                      curve: PremiumCurves.emphasized,
-                      builder: (context, value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, 10 * (1 - value)),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Text(
-                        taka(wallet.availableBalance),
-                        style: PremiumTypography.currencyLarge.copyWith(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
+                      const Spacer(),
+                      Text('PREMIUM',
+                          style: AppTextStyles.label.copyWith(
+                              color: AppColors.gold,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.5)),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Available Balance',
+                              style: AppTextStyles.body2.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.7))),
+                          const SizedBox(height: 1),
+                          Text(
+                              _hidden
+                                  ? '৳ • • • • •'
+                                  : taka(wallet.availableBalance),
+                              style: AppTextStyles.h1.copyWith(
+                                  color: Colors.white, fontSize: 27)),
+                        ],
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => setState(() => _hidden = !_hidden),
+                        behavior: HitTestBehavior.opaque,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 3, left: 8),
+                          child: Icon(
+                              _hidden
+                                  ? Icons.visibility_off_rounded
+                                  : Icons.visibility_rounded,
+                              size: 19,
+                              color: Colors.white.withValues(alpha: 0.7)),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.25),
-                      width: 1,
-                    ),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.account_balance_wallet_rounded,
-                    color: Colors.white,
-                    size: 28,
+                  const SizedBox(height: AppSpacing.sm),
+                  // Masked card number + holder on one line.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(_maskedNumber,
+                            style: AppTextStyles.title.copyWith(
+                                color: Colors.white.withValues(alpha: 0.92),
+                                fontSize: 13.5,
+                                letterSpacing: 1.2)),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(_holder,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: AppTextStyles.label.copyWith(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                letterSpacing: 0.6)),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSubWallet(
-                    context,
-                    Icons.emoji_events_rounded,
-                    'Winning',
-                    taka(wallet.winningBalance),
-                    PremiumColors.winningLight,
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _subTile(Icons.emoji_events_rounded, 'Winning',
+                            taka(wallet.winningBalance), AppColors.gold),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _subTile(
+                            Icons.savings_rounded,
+                            'Withdrawable',
+                            taka(wallet.withdrawableBalance),
+                            AppColors.winningTeal),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildSubWallet(
-                    context,
-                    Icons.sports_esports_rounded,
-                    'Gaming',
-                    taka(wallet.availableBalance),
-                    PremiumColors.gold,
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: PrimaryButton(
+                          label: 'Add Money',
+                          icon: Icons.add,
+                          variant: ButtonVariant.green,
+                          height: 44,
+                          onPressed: () => Get.toNamed(AppRoutes.deposit),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: PrimaryButton(
+                          label: 'Withdraw',
+                          icon: Icons.arrow_upward,
+                          variant: ButtonVariant.red,
+                          height: 44,
+                          onPressed: () => Get.toNamed(AppRoutes.withdraw),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    context,
-                    Icons.add_rounded,
-                    'Add Money',
-                    () => Get.toNamed(AppRoutes.deposit),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildActionButton(
-                    context,
-                    Icons.arrow_upward_rounded,
-                    'Withdraw',
-                    () => Get.toNamed(AppRoutes.withdraw),
-                    isOutlined: true,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -442,157 +415,134 @@ class _PremiumBalanceHero extends StatelessWidget {
     );
   }
 
-  Widget _buildSubWallet(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String amount,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(PremiumRadius.md),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.18),
-          width: 1,
+  Widget _circle(double size, Color color) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      );
+
+  Widget _pill(IconData icon, String label) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
         ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: Colors.white.withValues(alpha: 0.9)),
+            const SizedBox(width: 4),
+            Text(label,
+                style: AppTextStyles.label.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
+      );
+
+  // Metallic EMV-style chip.
+  Widget _chip() => Container(
+        width: 34,
+        height: 25,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF3D58A), Color(0xFFC79A3F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+        ),
+        child: Center(
+          child: Container(
+            width: 22,
+            height: 16,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+              border:
+                  Border.all(color: const Color(0xFF8A6A1E), width: 1),
+            ),
+          ),
+        ),
+      );
+
+  Widget _subTile(IconData icon, String label, String value, Color accent) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: color),
+              Icon(icon, size: 14, color: accent),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: PremiumTypography.caption.copyWith(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 12,
-                ),
-              ),
+              Text(label,
+                  style: AppTextStyles.label
+                      .copyWith(color: Colors.white.withValues(alpha: 0.75))),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            amount,
-            style: PremiumTypography.bodyMedium.copyWith(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          const SizedBox(height: 5),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.title
+                  .copyWith(color: Colors.white, fontSize: 15.5)),
         ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(
-    BuildContext context,
-    IconData icon,
-    String label,
-    VoidCallback onPressed, {
-    bool isOutlined = false,
-  }) {
-    return SizedBox(
-      height: 48,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isOutlined ? Colors.transparent : Colors.white,
-          foregroundColor: isOutlined ? Colors.white : PremiumColors.primary,
-          elevation: 0,
-          side: isOutlined
-              ? BorderSide(color: Colors.white.withOpacity(0.4), width: 1.5)
-              : null,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(PremiumRadius.button),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: PremiumTypography.button.copyWith(
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 }
 
+/// A compact transaction row for the wallet's recent-activity preview.
 class _MiniTxRow extends StatelessWidget {
   final TransactionModel tx;
-  
   const _MiniTxRow({required this.tx});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool credit = tx.isCredit;
-    final Color color = credit ? PremiumColors.winning : PremiumColors.danger;
-    
-    return PremiumCard(
-      padding: const EdgeInsets.all(14),
+    final credit = tx.isCredit;
+    final color = credit ? AppColors.winningTeal : AppColors.danger;
+    return AppCard(
+      padding: const EdgeInsets.all(11),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(11),
             ),
-            child: Icon(
-              credit ? Icons.south_west_rounded : Icons.north_east_rounded,
-              color: color,
-              size: 20,
-            ),
+            child: Icon(credit ? Icons.south_west : Icons.north_east,
+                color: color, size: 19),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  tx.description.isEmpty ? tx.type.name : tx.description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: PremiumTypography.bodyMedium.copyWith(
-                    color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${tx.method} • ${shortDateTime(tx.date)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: PremiumTypography.caption.copyWith(
-                    color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                  ),
-                ),
+                Text(tx.description.isEmpty ? tx.type.name : tx.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body1
+                        .copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text('${tx.method} • ${shortDateTime(tx.date)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body2.copyWith(color: context.cTextDim)),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            '${credit ? '+' : '-'}${taka(tx.amount)}',
-            style: PremiumTypography.bodyMedium.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-            ),
-          ),
+          const SizedBox(width: 8),
+          Text('${credit ? '+' : '-'}${taka(tx.amount)}',
+              style: AppTextStyles.title.copyWith(color: color, fontSize: 14.5)),
         ],
       ),
     );

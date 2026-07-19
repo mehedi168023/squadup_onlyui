@@ -6,16 +6,13 @@ import '../../app/data/models/heads_up_notification.dart';
 import '../../app/data/services/notification_service.dart';
 import '../../app/data/services/session_service.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../design_system/components/inputs/premium_text_field.dart';
-import '../../design_system/animations/premium_curves.dart';
-import '../../design_system/animations/premium_durations.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
 import '../../app/widgets/auth_backdrop.dart';
+import '../../app/widgets/auth_field.dart';
 import '../../app/widgets/glass.dart';
+import '../../app/widgets/primary_button.dart';
 
 class LoginController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -31,8 +28,11 @@ class LoginController extends GetxController {
     super.onClose();
   }
 
+  /// Mock "Google" sign-in — simulates the account chooser + a successful
+  /// local login (no backend, no real Google SDK). Keeps the button working.
   Future<void> signInWithGoogle() async {
     googleLoading.value = true;
+    // Simulate the account-picker + auth round-trip latency.
     final ok = await SessionService.to.loginWithGoogle(
         'mock-google-id-token-${DateTime.now().millisecondsSinceEpoch}');
     googleLoading.value = false;
@@ -40,6 +40,7 @@ class LoginController extends GetxController {
     _enter();
   }
 
+  /// Email/phone + password login (mock — any credentials work).
   Future<void> submitEmail() async {
     if (!(formKey.currentState?.validate() ?? false)) return;
     emailLoading.value = true;
@@ -54,6 +55,9 @@ class LoginController extends GetxController {
     Get.offAllNamed(AppRoutes.shell);
     final name = SessionService.to.user.value?.name ?? 'Champion';
     Future.delayed(const Duration(milliseconds: 400), () {
+      // In-app welcome banner (root-overlay heads-up). OS notification is left
+      // off here so we don't double-post — the confirmation below is the single
+      // OS notification, fired on the reliable default channel.
       NotificationService.to.showHeadsUp(
         HeadsUpNotification(
           id: 'welcome_${DateTime.now().millisecondsSinceEpoch}',
@@ -63,6 +67,8 @@ class LoginController extends GetxController {
           priority: NotifPriority.normal,
         ),
       );
+      // Real OS heads-up notification confirming the system works end-to-end
+      // (requests POST_NOTIFICATIONS on Android 13+ before posting).
       NotificationService.to.notifyLoginSuccess();
     });
   }
@@ -74,8 +80,6 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.put(LoginController());
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
       body: Stack(
         children: [
@@ -83,169 +87,125 @@ class LoginScreen extends StatelessWidget {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: PremiumSpacing.all24,
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: PremiumDurations.slow,
-                  curve: PremiumCurves.emphasized,
-                  builder: (context, value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.scale(
-                        scale: 0.95 + (0.05 * value),
-                        child: child,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: GlassSurface(
+                  // 18 (app-wide default) — a live BackdropFilter re-rasterizes
+                  // every frame while the card animates; 18 is visually ~identical
+                  // to 22 here but noticeably cheaper, avoiding auth-screen jank.
+                  blur: 18,
+                  opacity: 0.5,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.xxl,
+                      AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl),
+                  child: Form(
+                    key: c.formKey,
+                    child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Square brand logo (NOT circular). Hero tag 'brand-logo'
+                      // matches the Splash logo so the shared-element flight
+                      // works. ClipRRect uses a small 12px radius; the logo is
+                      // shown in full via BoxFit.contain (no crop, no stretch).
+                      Hero(
+                        tag: 'brand-logo',
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.5)),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(AppConstants.logo,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.contain,
+                                cacheWidth: 240),
+                          ),
+                        ),
                       ),
-                    );
-                  },
-                  child: GlassSurface(
-                    blur: 18,
-                    opacity: 0.5,
-                    borderRadius: BorderRadius.circular(PremiumRadius.cardLarge),
-                    padding: const EdgeInsets.all(32),
-                    child: Form(
-                      key: c.formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: AppSpacing.md),
+                      const Text('Welcome to ${AppConstants.appName}',
+                          style: AppTextStyles.h1, textAlign: TextAlign.center),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text('Sign in to join tournaments & win rewards',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.body2
+                              .copyWith(color: context.cTextDim)),
+                      const SizedBox(height: AppSpacing.xl),
+                      Obx(() => PrimaryButton(
+                            label: 'Continue with Google',
+                            icon: Icons.g_mobiledata_rounded,
+                            loading: c.googleLoading.value,
+                            onPressed: c.signInWithGoogle,
+                          )),
+                      const SizedBox(height: AppSpacing.lg),
+                      Row(children: [
+                        Expanded(child: Divider(color: context.cBorder)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md),
+                          child: Text('or',
+                              style: AppTextStyles.body2
+                                  .copyWith(color: context.cTextMuted)),
+                        ),
+                        Expanded(child: Divider(color: context.cBorder)),
+                      ]),
+                      const SizedBox(height: AppSpacing.lg),
+                      AuthField(
+                        label: 'Phone or Email',
+                        hint: 'Enter your phone or email',
+                        icon: Icons.person_outline,
+                        controller: c.identifier,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [
+                          AutofillHints.email,
+                          AutofillHints.telephoneNumber
+                        ],
+                        validator: Validators.identifier,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AuthField(
+                        label: 'Password',
+                        hint: 'Enter your password',
+                        icon: Icons.lock_outline,
+                        controller: c.password,
+                        isPassword: true,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.password],
+                        validator: Validators.loginPassword,
+                        onSubmitted: c.submitEmail,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Obx(() => PrimaryButton(
+                            label: 'Login',
+                            variant: ButtonVariant.green,
+                            loading: c.emailLoading.value,
+                            onPressed: c.submitEmail,
+                          )),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Hero(
-                            tag: 'brand-logo',
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: PremiumColors.primary.withOpacity(0.5),
-                                  width: 2,
-                                ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x337C3AED),
-                                    blurRadius: 24,
-                                    spreadRadius: 0,
-                                    offset: Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.asset(
-                                  AppConstants.logo,
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.contain,
-                                  cacheWidth: 240,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Welcome to ${AppConstants.appName}',
-                            style: PremiumTypography.h2.copyWith(
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sign in to join tournaments & win rewards',
-                            textAlign: TextAlign.center,
-                            style: PremiumTypography.body.copyWith(
-                              color: Colors.white.withOpacity(0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          Obx(() => PremiumButton.primary(
-                                text: 'Continue with Google',
-                                icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-                                onPressed: c.googleLoading.value ? null : c.signInWithGoogle,
-                                isLoading: c.googleLoading.value,
-                                isFullWidth: true,
-                                customColor: Colors.white,
-                              )),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Divider(
-                                  color: Colors.white.withOpacity(0.2),
-                                  thickness: 1,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  'or',
-                                  style: PremiumTypography.body.copyWith(
-                                    color: Colors.white.withOpacity(0.5),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Divider(
-                                  color: Colors.white.withOpacity(0.2),
-                                  thickness: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          PremiumTextField(
-                            controller: c.identifier,
-                            label: 'Phone or Email',
-                            hint: 'Enter your phone or email',
-                            prefixIcon: const Icon(Icons.person_outline_rounded),
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                          ),
-                          const SizedBox(height: 16),
-                          PremiumPasswordField(
-                            controller: c.password,
-                            label: 'Password',
-                            hint: 'Enter your password',
-                            onSubmitted: (_) => c.submitEmail(),
-                          ),
-                          const SizedBox(height: 24),
-                          Obx(() => PremiumButton.primary(
-                                text: 'Login',
-                                onPressed: c.emailLoading.value ? null : c.submitEmail,
-                                isLoading: c.emailLoading.value,
-                                isFullWidth: true,
-                                customColor: PremiumColors.winning,
-                              )),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Don't have an account? ",
-                                style: PremiumTypography.body.copyWith(
-                                  color: Colors.white.withOpacity(0.7),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () => Get.toNamed(AppRoutes.register),
-                                child: Text(
-                                  'Register',
-                                  style: PremiumTypography.bodyMedium.copyWith(
-                                    color: PremiumColors.primary,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: PremiumColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Version ${AppConstants.appVersion}',
-                            style: PremiumTypography.caption.copyWith(
-                              color: Colors.white.withOpacity(0.4),
-                            ),
+                          Text("Don't have an account? ",
+                              style: AppTextStyles.body2
+                                  .copyWith(color: context.cTextDim)),
+                          GestureDetector(
+                            onTap: () => Get.toNamed(AppRoutes.register),
+                            child: Text('Register',
+                                style: AppTextStyles.title.copyWith(
+                                    color: AppColors.primary, fontSize: 15)),
                           ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text('Version ${AppConstants.appVersion}',
+                          style: AppTextStyles.body2
+                              .copyWith(color: context.cTextMuted)),
+                    ],
+                  ),
                   ),
                 ),
               ),

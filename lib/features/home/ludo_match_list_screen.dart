@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:get/get.dart';
 import '../../app/core/app_constants.dart';
 import '../../app/data/models/match_model.dart';
 import '../../app/data/services/session_service.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../app/widgets/premium_back_button.dart';
-import '../../design_system/tokens/premium_shadows.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
 enum _LudoFilter { all, mine, lowHigh, highLow }
@@ -45,47 +43,42 @@ class _LudoMatchListScreenState extends State<LudoMatchListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          mode.title,
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
+      appBar: AppBar(leading: const PremiumBackButton(), 
+        title: Text(mode.title),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 12),
-            child: _PremiumWinSsButton(),
+            child: _WinSsButton(),
           ),
         ],
       ),
       body: ResponsiveCenter(
         child: Column(
           children: [
-            _PremiumFilterBar(current: filter, onSelect: (f) => setState(() => filter = f)),
+            _FilterBar(
+              current: filter,
+              onSelect: (f) => setState(() => filter = f),
+            ),
             Expanded(
               child: Obx(() {
                 final list = _apply(session.matchesForMode(mode.key));
                 if (list.isEmpty) {
-                  return _buildEmptyState(context, isDark);
+                  return const Center(
+                    child: EmptyState(
+                      icon: Icons.casino_outlined,
+                      title: 'No matches here',
+                      hint: 'Try another filter or pull to refresh',
+                    ),
+                  );
                 }
                 return ListView.separated(
                   padding: EdgeInsets.fromLTRB(
-                    PremiumSpacing.screenHorizontal,
-                    PremiumSpacing.md,
-                    PremiumSpacing.screenHorizontal,
-                    MediaQuery.of(context).padding.bottom + 24,
-                  ),
+                      12, 12, 12, MediaQuery.of(context).padding.bottom + 24),
                   itemCount: list.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
-                  itemBuilder: (_, i) => RepaintBoundary(
-                    child: _PremiumLudoMatchCard(match: list[i]),
-                  ),
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (_, i) =>
+                      RepaintBoundary(child: _LudoMatchCard(match: list[i])),
                 );
               }),
             ),
@@ -94,55 +87,34 @@ class _LudoMatchListScreenState extends State<LudoMatchListScreen> {
       ),
     );
   }
-
-  Widget _buildEmptyState(BuildContext context, bool isDark) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.casino_outlined, size: 48,
-                color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary),
-          ),
-          const SizedBox(height: 20),
-          Text('No matches here',
-              style: PremiumTypography.h5.copyWith(color: isDark ? PremiumColors.darkText : PremiumColors.lightText)),
-          const SizedBox(height: 8),
-          Text('Try another filter or pull to refresh',
-              style: PremiumTypography.body.copyWith(color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary)),
-        ],
-      ),
-    );
-  }
 }
 
-class _PremiumWinSsButton extends StatelessWidget {
-  const _PremiumWinSsButton();
+/// Header button (right side) → Win-screenshot upload screen.
+class _WinSsButton extends StatelessWidget {
+  const _WinSsButton();
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => Get.toNamed(AppRoutes.uploadEvidence),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: PremiumColors.winning.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: PremiumColors.winning.withOpacity(0.5)),
+          color: AppColors.matchesGreen.withValues(alpha: 0.16),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border:
+              Border.all(color: AppColors.matchesGreen.withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_upload_outlined, size: 16, color: PremiumColors.winning),
+            const Icon(Icons.cloud_upload_outlined,
+                size: 16, color: AppColors.matchesGreen),
             const SizedBox(width: 6),
             Text('Win SS',
-                style: PremiumTypography.labelSmall.copyWith(
-                    color: PremiumColors.winning, fontWeight: FontWeight.w700)),
+                style: AppTextStyles.label.copyWith(
+                    color: AppColors.matchesGreen,
+                    fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -150,25 +122,25 @@ class _PremiumWinSsButton extends StatelessWidget {
   }
 }
 
-class _PremiumFilterBar extends StatelessWidget {
+class _FilterBar extends StatelessWidget {
   final _LudoFilter current;
   final ValueChanged<_LudoFilter> onSelect;
-  const _PremiumFilterBar({required this.current, required this.onSelect});
+  const _FilterBar({required this.current, required this.onSelect});
 
   static const _items = [
-    (_LudoFilter.all, Icons.sports_esports_rounded, 'All Matches'),
-    (_LudoFilter.mine, Icons.person_rounded, 'My Match'),
-    (_LudoFilter.lowHigh, Icons.trending_up_rounded, 'Low to High'),
-    (_LudoFilter.highLow, Icons.trending_down_rounded, 'High to Low'),
+    (_LudoFilter.all, Icons.sports_esports, 'All Matches'),
+    (_LudoFilter.mine, Icons.person, 'My Match'),
+    (_LudoFilter.lowHigh, Icons.trending_up, 'Low to High'),
+    (_LudoFilter.highLow, Icons.trending_down, 'High to Low'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 60,
+      height: 56,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         itemCount: _items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
@@ -177,25 +149,31 @@ class _PremiumFilterBar extends StatelessWidget {
           return GestureDetector(
             onTap: () => onSelect(item.$1),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: AppDurations.fast,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: active ? PremiumColors.winning.withOpacity(0.15) : context.card,
-                borderRadius: BorderRadius.circular(PremiumRadius.md),
+                color: active
+                    ? AppColors.matchesGreen.withValues(alpha: 0.16)
+                    : context.cSurface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                  color: active ? PremiumColors.winning : context.border,
-                  width: active ? 1.5 : 1,
+                  color: active ? AppColors.matchesGreen : context.cBorder,
+                  width: active ? 1.4 : 1,
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(item.$2, size: 18, color: active ? PremiumColors.winning : context.textTertiary),
-                  const SizedBox(width: 8),
+                  Icon(item.$2,
+                      size: 17,
+                      color:
+                          active ? AppColors.matchesGreen : context.cTextDim),
+                  const SizedBox(width: 7),
                   Text(item.$3,
-                      style: PremiumTypography.labelSmall.copyWith(
-                        color: active ? PremiumColors.winning : context.textSecondary,
-                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      style: AppTextStyles.title.copyWith(
+                        fontSize: 13,
+                        color:
+                            active ? AppColors.matchesGreen : context.cTextDim,
                       )),
                 ],
               ),
@@ -207,88 +185,99 @@ class _PremiumFilterBar extends StatelessWidget {
   }
 }
 
-class _PremiumLudoMatchCard extends StatelessWidget {
+class _LudoMatchCard extends StatelessWidget {
   final FfMatch match;
-  const _PremiumLudoMatchCard({required this.match});
+  const _LudoMatchCard({required this.match});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool joined = match.isJoined;
-
-    return PremiumCard(
-      padding: PremiumSpacing.card,
+    final joined = match.isJoined;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.cSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: context.cBorder),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              const Icon(Icons.emoji_events_rounded,
+                  color: AppColors.gold, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('${match.title} MATCH ${match.code}',
+                    style: AppTextStyles.title.copyWith(fontSize: 15)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: context.cBorder),
+          const SizedBox(height: 12),
+          Row(
+            children: [
               Container(
-                width: 44, height: 44,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  gradient: PremiumColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(PremiumRadius.md),
-                  boxShadow: PremiumShadows.primaryGlow,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF15294D), Color(0xFF101826)],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.4)),
                 ),
-                child: const Icon(Icons.casino_rounded, color: Colors.white, size: 22),
+                child: const Icon(Icons.casino_rounded,
+                    color: AppColors.primary, size: 26),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${match.title} MATCH ${match.code}',
-                        style: PremiumTypography.bodyMedium.copyWith(
-                            color: isDark ? PremiumColors.darkText : PremiumColors.lightText)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.emoji_events_rounded, color: PremiumColors.gold, size: 14),
-                        const SizedBox(width: 4),
-                        Text('${match.slotsTaken}/${match.slotsTotal} Players',
-                            style: PremiumTypography.captionSmall.copyWith(
-                                color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary)),
-                      ],
-                    ),
+                    _stat(context, 'ENTRY FEE', taka(match.entryFee),
+                        AppColors.gold),
+                    _stat(context, 'WIN PRIZE', taka(match.prize),
+                        AppColors.matchesGreen),
+                    _stat(
+                        context,
+                        'PLAYERS',
+                        '${match.slotsTaken}/${match.slotsTotal}',
+                        AppColors.matchesGreen),
                   ],
                 ),
               ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 78,
+                child: PrimaryButton(
+                  label: joined ? 'JOINED' : 'JOIN',
+                  height: 44,
+                  onPressed: joined
+                      ? null
+                      : () => Get.toNamed(AppRoutes.ludoJoin, arguments: match),
+                ),
+              ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: _buildStat('ENTRY FEE', taka(match.entryFee), PremiumColors.gold)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildStat('WIN PRIZE', taka(match.prize), PremiumColors.winning)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildStat('PLAYERS', '${match.slotsTaken}/${match.slotsTotal}', PremiumColors.winning)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: PremiumButton.primary(
-              text: joined ? 'JOINED' : 'JOIN',
-              onPressed: joined ? null : () => Get.toNamed(AppRoutes.ludoJoin, arguments: match),
-              isFullWidth: true,
-              size: PremiumButtonSize.small,
-              customColor: PremiumColors.winning,
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStat(String label, String value, Color color) {
+  Widget _stat(BuildContext context, String label, String value, Color color) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: PremiumTypography.captionSmall.copyWith(fontSize: 9)),
-        const SizedBox(height: 4),
-        Text(value, style: PremiumTypography.labelSmall.copyWith(color: color, fontWeight: FontWeight.w700)),
+        Text(label,
+            style: AppTextStyles.caption
+                .copyWith(color: context.cTextMuted, fontSize: 9)),
+        const SizedBox(height: 3),
+        Text(value,
+            style: AppTextStyles.title.copyWith(fontSize: 14, color: color)),
       ],
     );
   }

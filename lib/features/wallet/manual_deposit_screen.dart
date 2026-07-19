@@ -6,17 +6,18 @@ import '../../app/core/app_toast.dart';
 import '../../app/core/validators.dart';
 import '../../app/data/models/misc_models.dart';
 import '../../app/data/services/session_service.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../design_system/components/inputs/premium_text_field.dart';
-import '../../app/widgets/premium_back_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
 import '../../app/widgets/payment_channel_field.dart';
+import '../../app/widgets/premium_back_button.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
+/// Manual deposit flow for bKash / Nagad / Rocket: the user sends money to the
+/// listed personal/agent number, then submits the Transaction ID + amount (and
+/// optionally their own number) to request the top-up.
 class ManualDepositScreen extends StatefulWidget {
   const ManualDepositScreen({super.key});
 
@@ -37,8 +38,10 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
     final args = (Get.arguments as Map?) ?? const {};
     channel = (args['channel'] as PaymentChannel?) ??
         const PaymentChannel(
-            key: 'bkash', label: 'bKash',
-            color: Color(0xFFE2136E), number: '01710000001',
+            key: 'bkash',
+            label: 'bKash',
+            color: Color(0xFFE2136E),
+            number: '01710000001',
             accountType: 'Personal');
     final prefill = args['amount'] as double?;
     if (prefill != null && prefill > 0) {
@@ -61,232 +64,268 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
 
   Future<void> _submit() async {
     final aErr = Validators.amount(amount.text, min: 1);
-    if (aErr != null) { AppToast.error(aErr); return; }
+    if (aErr != null) {
+      AppToast.error(aErr);
+      return;
+    }
     final tErr = Validators.trxId(trxId.text);
-    if (tErr != null) { AppToast.error(tErr); return; }
+    if (tErr != null) {
+      AppToast.error(tErr);
+      return;
+    }
     final sn = senderNumber.text.trim();
     if (sn.isNotEmpty) {
       final snErr = Validators.phone(sn);
-      if (snErr != null) { AppToast.error(snErr); return; }
+      if (snErr != null) {
+        AppToast.error(snErr);
+        return;
+      }
     }
     final amt = double.parse(amount.text.trim());
     setState(() => _submitting = true);
     final ok = await SessionService.to.submitManualDeposit(
-      channelKey: channel.key, amount: amt,
-      trxId: trxId.text.trim(), senderNumber: senderNumber.text.trim(),
+      channelKey: channel.key,
+      amount: amt,
+      trxId: trxId.text.trim(),
+      senderNumber: senderNumber.text.trim(),
     );
     if (!mounted) return;
     setState(() => _submitting = false);
     if (!ok) return;
     Get.back();
-    AppToast.success('Deposit request sent!');
+    AppToast.success(
+        'Deposit request sent! We\'ll verify your TRX and credit ${taka(amt)} shortly.');
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
       appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text('${channel.label} Deposit', style: PremiumTypography.h3.copyWith(
-          color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-        )),
-      ),
+          leading: const PremiumBackButton(),
+          title: Text('${channel.label} Deposit')),
       body: ResponsiveCenter(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(12, 12, 12, 24),
+          padding: const EdgeInsets.all(12),
           children: [
-            _buildNumberCard(context, isDark),
-            const SizedBox(height: 20),
-            _buildSectionHeader(isDark, 'HOW TO DEPOSIT'),
-            const SizedBox(height: 16),
-            _buildSteps(context, isDark),
-            const SizedBox(height: 24),
-            _buildSectionHeader(isDark, 'SUBMIT YOUR PAYMENT'),
-            const SizedBox(height: 16),
-            PremiumTextField(
+            _NumberCard(channel: channel, onCopy: _copyNumber),
+            const SizedBox(height: AppSpacing.lg),
+            const SectionHeader('HOW TO DEPOSIT'),
+            const SizedBox(height: AppSpacing.md),
+            _steps(context),
+            const SizedBox(height: AppSpacing.lg),
+            const SectionHeader('SUBMIT YOUR PAYMENT'),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
               controller: amount,
-              label: 'Amount Sent',
-              hint: 'Enter amount',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              prefixIcon: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 8),
-                child: Text(AppConstants.currency, style: PremiumTypography.h5.copyWith(
-                  color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                )),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              style: AppTextStyles.body1,
+              decoration: const InputDecoration(
+                labelText: 'Amount Sent',
+                prefixIcon: Padding(
+                  padding: EdgeInsets.only(left: 16, right: 8),
+                  child: Text(AppConstants.currency,
+                      style: TextStyle(
+                          fontSize: 20, color: AppColors.textSecondary)),
+                ),
+                prefixIconConstraints: BoxConstraints(minWidth: 0),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: trxId,
+              textCapitalization: TextCapitalization.characters,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                LengthLimitingTextInputFormatter(24),
+              ],
+              style: AppTextStyles.body1,
+              decoration: const InputDecoration(
+                labelText: 'Transaction ID (TRX)',
+                hintText: 'e.g. 9HG7K2LM4P',
+                prefixIcon: Icon(Icons.tag_rounded),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: senderNumber,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.done,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(11),
+              ],
+              onSubmitted: (_) => _submit(),
+              style: AppTextStyles.body1,
+              decoration: InputDecoration(
+                labelText: 'Your ${channel.label} Number (optional)',
+                hintText: 'The number you sent money from',
+                prefixIcon: const Icon(Icons.phone_rounded),
               ),
             ),
             const SizedBox(height: 16),
-            _buildTrxField(context, isDark),
-            const SizedBox(height: 16),
-            _buildSenderField(context, isDark),
-            const SizedBox(height: 24),
-            PremiumButton.primary(
-              text: 'SUBMIT REQUEST',
-              icon: const Icon(Icons.send_rounded),
-              onPressed: _submitting ? null : _submit,
-              isLoading: _submitting,
-              isFullWidth: true,
-              customColor: PremiumColors.winning,
+            PrimaryButton(
+              label: 'SUBMIT REQUEST',
+              icon: Icons.send_rounded,
+              variant: ButtonVariant.green,
+              loading: _submitting,
+              onPressed: _submit,
             ),
-            const SizedBox(height: 16),
-            _buildInfoCard(context, isDark),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.gold.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded,
+                      color: AppColors.gold, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                        'Send money first, then submit. Your balance is added after we verify the Transaction ID.',
+                        style: AppTextStyles.body2
+                            .copyWith(color: context.cText, height: 1.4)),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNumberCard(BuildContext context, bool isDark) {
-    return PremiumCard(
-      color: channel.color.withOpacity(0.15),
-      border: Border.all(color: channel.color.withOpacity(0.5)),
-      padding: PremiumSpacing.card,
+  Widget _steps(BuildContext context) {
+    final steps = [
+      'Open your ${channel.label} app and choose “Send Money”.',
+      'Send the amount to the ${channel.accountType ?? 'Personal'} number above.',
+      'Copy the Transaction ID (TRX) from the confirmation message.',
+      'Enter the amount & TRX below and submit your request.',
+    ];
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        children: [
+          for (int i = 0; i < steps.length; i++) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: channel.color.withValues(alpha: 0.16),
+                    shape: BoxShape.circle,
+                    border:
+                        Border.all(color: channel.color.withValues(alpha: 0.4)),
+                  ),
+                  child: Text('${i + 1}',
+                      style: AppTextStyles.title
+                          .copyWith(color: channel.color, fontSize: 12)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(steps[i],
+                      style: AppTextStyles.body1.copyWith(height: 1.4)),
+                ),
+              ],
+            ),
+            if (i != steps.length - 1) const SizedBox(height: 12),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The prominent "send money to this number" card with a copy action.
+class _NumberCard extends StatelessWidget {
+  final PaymentChannel channel;
+  final VoidCallback onCopy;
+  const _NumberCard({required this.channel, required this.onCopy});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            channel.color.withValues(alpha: 0.9),
+            channel.color.withValues(alpha: 0.55),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              PaymentChannelRow(channel: channel),
+              const Spacer(),
               Container(
-                width: 44, height: 44,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: channel.color.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.account_balance_rounded, color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(channel.label, style: PremiumTypography.h5.copyWith(
-                      color: isDark ? PremiumColors.darkText : PremiumColors.lightText)),
-                    Text(channel.accountType ?? '', style: PremiumTypography.caption.copyWith(
-                      color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary)),
-                  ],
+                  color: Colors.white.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
+                child: Text('${channel.accountType ?? 'Personal'} • Send Money',
+                    style: AppTextStyles.label.copyWith(
+                        color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? PremiumColors.darkSurface2 : Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Text(channel.number ?? '', style: PremiumTypography.h5.copyWith(
-                  color: Colors.white, letterSpacing: 1)),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.copy_rounded, color: Colors.white, size: 20),
-                  onPressed: _copyNumber,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(bool isDark, String title) {
-    return Text(title, style: PremiumTypography.labelLarge.copyWith(
-      color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-      letterSpacing: 1.2, fontWeight: FontWeight.w700,
-    ));
-  }
-
-  Widget _buildSteps(BuildContext context, bool isDark) {
-    final steps = ['Send money to the number above', 'Copy your Transaction ID (TRX)', 'Submit the form below', 'Wait for verification (~few hours)'];
-    return Column(
-      children: steps.asMap().entries.map((entry) {
-        final i = entry.key + 1;
-        final step = entry.value;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
+          const SizedBox(height: AppSpacing.lg),
+          Text('Send money to this number',
+              style: AppTextStyles.body2
+                  .copyWith(color: Colors.white.withValues(alpha: 0.85))),
+          const SizedBox(height: 6),
+          Row(
             children: [
-              Container(
-                width: 28, height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  gradient: PremiumColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('$i', style: PremiumTypography.labelSmall.copyWith(
-                  color: Colors.white, fontWeight: FontWeight.w800)),
+              Expanded(
+                child: Text(channel.number ?? '',
+                    style: AppTextStyles.h1.copyWith(
+                        color: Colors.white,
+                        fontSize: 26,
+                        letterSpacing: 1)),
               ),
-              const SizedBox(width: 12),
-              Text(step, style: PremiumTypography.body.copyWith(color: context.textSecondary)),
+              GestureDetector(
+                onTap: onCopy,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.copy_rounded,
+                          color: Colors.white, size: 16),
+                      const SizedBox(width: 6),
+                      Text('Copy',
+                          style: AppTextStyles.button.copyWith(
+                              color: Colors.white, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ),
             ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildTrxField(BuildContext context, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? PremiumColors.darkCard : PremiumColors.lightCard,
-        borderRadius: BorderRadius.circular(PremiumRadius.input),
-        border: Border.all(color: context.border),
-      ),
-      child: TextField(
-        controller: trxId,
-        textCapitalization: TextCapitalization.characters,
-        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')), LengthLimitingTextInputFormatter(24)],
-        style: PremiumTypography.body.copyWith(color: context.text),
-        decoration: InputDecoration(
-          labelText: 'Transaction ID (TRX)',
-          hintText: 'e.g. 9HG7K2LM4P',
-          hintStyle: PremiumTypography.body.copyWith(color: context.textTertiary),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          prefixIcon: const Padding(
-            padding: EdgeInsets.only(left: 16),
-            child: Icon(Icons.tag_rounded),
-          ),
-          labelStyle: PremiumTypography.body.copyWith(color: context.textSecondary),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSenderField(BuildContext context, bool isDark) {
-    return PremiumTextField(
-      controller: senderNumber,
-      label: 'Your ${channel.label} Number (optional)',
-      hint: 'The number you sent money from',
-      prefixIcon: const Icon(Icons.phone_rounded),
-      keyboardType: TextInputType.phone,
-      textInputAction: TextInputAction.done,
-      onSubmitted: (_) => _submit(),
-    );
-  }
-
-  Widget _buildInfoCard(BuildContext context, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: PremiumColors.gold.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(PremiumRadius.md),
-        border: Border.all(color: PremiumColors.gold.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline_rounded, color: PremiumColors.gold, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text('Send money first, then submit. Your balance is added after we verify the Transaction ID.',
-                style: PremiumTypography.bodySmall.copyWith(color: context.text, height: 1.4)),
           ),
         ],
       ),

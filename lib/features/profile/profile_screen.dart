@@ -8,15 +8,12 @@ import '../../app/core/app_constants.dart';
 import '../../app/core/theme_controller.dart';
 import '../../app/data/services/session_service.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/tokens/premium_shadows.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
 import '../../app/widgets/brand_app_bar.dart';
 import '../../app/widgets/common_widgets.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -25,196 +22,80 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = SessionService.to;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
       appBar: const BrandAppBar(),
       body: ResponsiveCenter(
         child: ListView(
+          // Extra bottom space so the last items (Logout) clear the floating
+          // bottom nav bar (the shell uses extendBody: true).
           padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            MediaQuery.of(context).padding.bottom + 84,
-          ),
+              12, 12, 12, MediaQuery.of(context).padding.bottom + 84),
           children: [
-            _PremiumProfileHeader(),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, isDark, 'ACCOUNT'),
-            const SizedBox(height: 16),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.person_outline_rounded,
-              'Edit Profile',
-              null,
-              PremiumColors.primary,
-              () => Get.toNamed(AppRoutes.editProfile),
-            ),
+            _ProfileHeader(),
+            const SizedBox(height: 15),
+            const SectionHeader('ACCOUNT'),
             const SizedBox(height: 12),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.account_balance_wallet_rounded,
-              'My Wallet',
-              null,
-              PremiumColors.winning,
-              () => Get.toNamed(AppRoutes.wallet),
-            ),
+            ListNavTile(
+                icon: Icons.person_outline,
+                label: 'Edit Profile',
+                onTap: () => Get.toNamed(AppRoutes.editProfile)),
             const SizedBox(height: 12),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.sports_esports_rounded,
-              'My Matches',
-              null,
-              PremiumColors.gold,
-              () => Get.toNamed(AppRoutes.myMatches),
-            ),
+            ListNavTile(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'My Wallet',
+                onTap: () => Get.toNamed(AppRoutes.wallet)),
             const SizedBox(height: 12),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.receipt_long_rounded,
-              'Order History',
-              'Top-ups & purchases',
-              PremiumColors.info,
-              () => Get.toNamed(AppRoutes.orders),
-            ),
+            ListNavTile(
+                icon: Icons.sports_esports_outlined,
+                label: 'My Matches',
+                onTap: () => Get.toNamed(AppRoutes.myMatches)),
             const SizedBox(height: 12),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.leaderboard_rounded,
-              'Top Players',
-              null,
-              PremiumColors.warning,
-              () => Get.toNamed(AppRoutes.topPlayers),
-            ),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, isDark, 'SETTINGS'),
-            const SizedBox(height: 16),
-            const _PremiumAppearanceTile(),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, isDark, 'MORE'),
-            const SizedBox(height: 16),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.share_rounded,
-              'Share App',
-              null,
-              PremiumColors.primary,
-              () => _openShare(session),
-            ),
+            ListNavTile(
+                icon: Icons.receipt_long_outlined,
+                label: 'Order History',
+                subtitle: 'Top-ups & purchases',
+                onTap: () => Get.toNamed(AppRoutes.orders)),
             const SizedBox(height: 12),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.gavel_rounded,
-              'Match Rules',
-              null,
-              PremiumColors.info,
-              () => Get.toNamed(AppRoutes.matchRules),
-            ),
+            ListNavTile(
+                icon: Icons.leaderboard_outlined,
+                label: 'Top Players',
+                onTap: () => Get.toNamed(AppRoutes.topPlayers)),
+            const SizedBox(height: 14),
+            const SectionHeader('SETTINGS'),
             const SizedBox(height: 12),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.description_rounded,
-              'Terms & Conditions',
-              null,
-              PremiumColors.warning,
-              () => Get.toNamed(AppRoutes.terms),
-            ),
+            const _AppearanceTile(),
+            const SizedBox(height: 14),
+            const SectionHeader('MORE'),
             const SizedBox(height: 12),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.code_rounded,
-              'Developer Profile',
-              null,
-              PremiumColors.primary,
-              () => Get.toNamed(AppRoutes.developer),
-            ),
+            ListNavTile(
+                icon: Icons.share_outlined,
+                label: 'Share App',
+                onTap: () => _openShare(session)),
             const SizedBox(height: 12),
-            _buildNavTile(
-              context,
-              isDark,
-              Icons.logout_rounded,
-              'Logout',
-              null,
-              PremiumColors.danger,
-              () => _confirmLogout(session),
+            ListNavTile(
+                icon: Icons.gavel_outlined,
+                label: 'Match Rules',
+                onTap: () => Get.toNamed(AppRoutes.matchRules)),
+            const SizedBox(height: 12),
+            ListNavTile(
+                icon: Icons.description_outlined,
+                label: 'Terms & Conditions',
+                onTap: () => Get.toNamed(AppRoutes.terms)),
+            const SizedBox(height: 12),
+            ListNavTile(
+                icon: Icons.code,
+                label: 'Developer Profile',
+                onTap: () => Get.toNamed(AppRoutes.developer)),
+            const SizedBox(height: 12),
+            ListNavTile(
+              icon: Icons.logout,
+              label: 'Logout',
+              iconColor: AppColors.danger,
+              onTap: () => _confirmLogout(session),
             ),
+            const SizedBox(height: 13),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, bool isDark, String title) {
-    return Text(
-      title,
-      style: PremiumTypography.labelLarge.copyWith(
-        color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-        letterSpacing: 1.2,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-
-  Widget _buildNavTile(
-    BuildContext context,
-    bool isDark,
-    IconData icon,
-    String label,
-    String? subtitle,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return PremiumCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: PremiumTypography.bodyMedium.copyWith(
-                    color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: PremiumTypography.caption.copyWith(
-                      color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-          ),
-        ],
       ),
     );
   }
@@ -238,14 +119,13 @@ void _openShare(SessionService session) {
   AppSheet.show(
     title: 'Share SquadUp',
     subtitle: 'Invite friends with your referral code and earn rewards.',
-    child: _PremiumShareSheet(code: code),
+    child: _ShareSheet(code: code),
   );
 }
 
-class _PremiumShareSheet extends StatelessWidget {
+class _ShareSheet extends StatelessWidget {
   final String code;
-  
-  const _PremiumShareSheet({required this.code});
+  const _ShareSheet({required this.code});
 
   String get _invite =>
       'Join me on ${AppConstants.appName} 🎮 Play Free Fire tournaments and win cash! '
@@ -253,137 +133,107 @@ class _PremiumShareSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
           decoration: BoxDecoration(
-            color: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3,
-            borderRadius: BorderRadius.circular(PremiumRadius.md),
-            border: Border.all(
-              color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-            ),
+            color: AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                'Your Referral Code',
-                style: PremiumTypography.caption.copyWith(
-                  color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                ),
+              const Icon(Icons.card_giftcard_rounded, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(code,
+                    style: AppTextStyles.h2
+                        .copyWith(color: AppColors.primary, letterSpacing: 2)),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      code,
-                      style: PremiumTypography.h4.copyWith(
-                        color: PremiumColors.primary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.copy_rounded),
-                    color: PremiumColors.primary,
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: code));
-                      AppToast.success('Copied to clipboard');
-                    },
-                  ),
-                ],
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  AppToast.success('Referral code copied');
+                },
+                child: const Icon(Icons.copy_rounded,
+                    color: AppColors.primary, size: 20),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        PremiumButton.primary(
-          text: 'Share Invite Link',
-          icon: const Icon(Icons.share_rounded),
+        const SizedBox(height: AppSpacing.lg),
+        PrimaryButton(
+          label: 'Copy Invite Message',
+          icon: Icons.ios_share_rounded,
           onPressed: () {
             Clipboard.setData(ClipboardData(text: _invite));
-            AppToast.success('Invite message copied to clipboard');
+            Get.back();
+            AppToast.success('Invite message copied — paste it anywhere!');
           },
-          isFullWidth: true,
         ),
       ],
     );
   }
 }
 
-class _PremiumAppearanceTile extends StatelessWidget {
-  const _PremiumAppearanceTile();
+class _AppearanceTile extends StatelessWidget {
+  const _AppearanceTile();
 
   @override
   Widget build(BuildContext context) {
     final theme = ThemeController.to;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Obx(() {
-      final dark = theme.mode.value == ThemeMode.dark;
-      return PremiumCard(
-        padding: const EdgeInsets.all(16),
-        child: Row(
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      child: Obx(() {
+        final dark = theme.isDark;
+        return Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: PremiumColors.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                color: PremiumColors.primary,
-                size: 22,
-              ),
+                  dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  color: AppColors.primary,
+                  size: 19),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Dark Mode',
-                    style: PremiumTypography.bodyMedium.copyWith(
-                      color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    dark ? 'On' : 'Off',
-                    style: PremiumTypography.caption.copyWith(
-                      color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                    ),
-                  ),
+                  Text('Dark Mode',
+                      style: AppTextStyles.body1.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).textTheme.bodyLarge?.color)),
+                  Text(dark ? 'On' : 'Off', style: AppTextStyles.body2),
                 ],
               ),
             ),
             Switch.adaptive(
               value: dark,
-              activeColor: PremiumColors.primary,
+              // Active color comes from colorScheme.primary (AppColors.primary),
+              // so no explicit (version-sensitive) color arg is needed.
               onChanged: (_) => theme.toggle(),
             ),
           ],
-        ),
-      );
-    });
+        );
+      }),
+    );
   }
 }
 
-class _PremiumProfileHeader extends StatelessWidget {
+class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = SessionService.to;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return PremiumCard(
-      padding: PremiumSpacing.card,
+    return AppCard(
       child: Obx(() {
         final user = session.user.value;
         final wallet = session.wallet.value;
@@ -392,70 +242,49 @@ class _PremiumProfileHeader extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 60,
-                  height: 60,
-                  padding: const EdgeInsets.all(8),
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: PremiumColors.primaryGradient,
-                    boxShadow: PremiumShadows.primaryGlow,
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.5)),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      AppConstants.logo,
-                      fit: BoxFit.cover,
-                      cacheWidth: 180,
-                    ),
+                    child: Image.asset(AppConstants.logo,
+                        fit: BoxFit.cover, cacheWidth: 160),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.name ?? 'Guest',
-                        style: PremiumTypography.h4.copyWith(
-                          color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                        ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(user?.name ?? 'Guest',
+                        style: AppTextStyles.h2.copyWith(fontSize: 18)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.5)),
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: PremiumColors.primary.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: PremiumColors.primary.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          'UID: ${user?.uid ?? '#0'}',
-                          style: PremiumTypography.labelSmall.copyWith(
-                            color: PremiumColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                      child: Text('UID : ${user?.uid ?? '#0'}',
+                          style: AppTextStyles.label
+                              .copyWith(color: AppColors.primary)),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark ? PremiumColors.darkSurface3 : PremiumColors.lightSurface3,
-                borderRadius: BorderRadius.circular(PremiumRadius.md),
-                border: Border.all(
-                  color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-                ),
+                color: context.cBgAlt,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.cBorder),
               ),
               child: Row(
                 children: [
@@ -463,83 +292,44 @@ class _PremiumProfileHeader extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Available Balance',
-                          style: PremiumTypography.caption.copyWith(
-                            color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          taka(wallet.availableBalance),
-                          style: PremiumTypography.currencyMedium.copyWith(
-                            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: PremiumColors.winning.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Winnings: ${taka(wallet.winningBalance)}',
-                            style: PremiumTypography.labelSmall.copyWith(
-                              color: PremiumColors.winning,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                        const Text('Available Balance',
+                            style: AppTextStyles.body2),
+                        const SizedBox(height: 4),
+                        Text(taka(wallet.availableBalance),
+                            style: AppTextStyles.h1.copyWith(fontSize: 24)),
+                        const SizedBox(height: 8),
+                        StatusPill(
+                          text: 'Winnings: ${taka(wallet.winningBalance)}',
+                          color: AppColors.winningTeal,
+                          showDot: false,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
                   SizedBox(
-                    width: 90,
-                    child: PremiumButton.primary(
-                      text: 'ADD',
-                      icon: const Icon(Icons.add_rounded, size: 18),
+                    width: 100,
+                    child: PrimaryButton(
+                      label: 'ADD',
+                      icon: Icons.add,
+                      variant: ButtonVariant.green,
+                      height: 42,
                       onPressed: () => Get.toNamed(AppRoutes.deposit),
-                      size: PremiumButtonSize.small,
-                      customColor: PremiumColors.winning,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             Row(
               children: [
-                _buildStat(
-                  context,
-                  isDark,
-                  Icons.sports_esports_rounded,
-                  PremiumColors.gold,
-                  '${user?.totalMatchesPlayed ?? 0}',
-                  'Matches',
-                ),
+                _stat(Icons.sports_esports, AppColors.gold,
+                    '${user?.totalMatchesPlayed ?? 0}', 'Matches'),
                 const SizedBox(width: 12),
-                _buildStat(
-                  context,
-                  isDark,
-                  Icons.military_tech_rounded,
-                  PremiumColors.gold,
-                  '${user?.totalMatchesWon ?? 0}',
-                  'Wins',
-                ),
+                _stat(Icons.military_tech, AppColors.gold,
+                    '${user?.totalMatchesWon ?? 0}', 'Wins'),
                 const SizedBox(width: 12),
-                _buildStat(
-                  context,
-                  isDark,
-                  Icons.currency_exchange_rounded,
-                  PremiumColors.gold,
-                  taka(wallet.wonAmount),
-                  'Earnings',
-                ),
+                _stat(Icons.currency_exchange, AppColors.gold,
+                    taka(wallet.wonAmount), 'Earnings'),
               ],
             ),
           ],
@@ -548,47 +338,14 @@ class _PremiumProfileHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildStat(
-    BuildContext context,
-    bool isDark,
-    IconData icon,
-    Color color,
-    String value,
-    String label,
-  ) {
+  Widget _stat(IconData icon, Color color, String value, String label) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? PremiumColors.darkSurface2 : PremiumColors.lightSurface2,
-          borderRadius: BorderRadius.circular(PremiumRadius.md),
-          border: Border.all(
-            color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: PremiumTypography.bodyMedium.copyWith(
-                color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                fontWeight: FontWeight.w700,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: PremiumTypography.captionSmall.copyWith(
-                color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: StatCell(
+          icon: icon,
+          iconColor: color,
+          value: value,
+          label: label,
+          valueFirst: true),
     );
   }
 }

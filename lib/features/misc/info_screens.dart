@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import '../../app/core/app_constants.dart';
 import '../../app/core/app_links.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../app/widgets/premium_back_button.dart';
-import '../../design_system/tokens/premium_shadows.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_text_styles.dart';
 import '../../app/widgets/common_widgets.dart';
 
 class TermsScreen extends StatelessWidget {
@@ -28,35 +24,13 @@ For full details visit squadup.gg/privacy''';
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Terms & Conditions',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Terms & Conditions')),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-          PremiumSpacing.screenHorizontal,
-          PremiumSpacing.md,
-          PremiumSpacing.screenHorizontal,
-          MediaQuery.of(context).padding.bottom + 24,
-        ),
-        child: PremiumCard(
-          padding: PremiumSpacing.cardLarge,
-          child: Text(
-            _terms,
-            style: PremiumTypography.body.copyWith(
-              color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-              height: 1.7,
-            ),
-          ),
+            12, 12, 12, MediaQuery.of(context).padding.bottom + 24),
+        child: AppCard(
+          child: Text(_terms, style: AppTextStyles.body1.copyWith(height: 1.7)),
         ),
       ),
     );
@@ -68,97 +42,64 @@ class DeveloperScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Developer Profile',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Developer Profile')),
       body: Center(
-        child: SingleChildScrollView(
-          padding: PremiumSpacing.all24,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  gradient: PremiumColors.primaryGradient,
-                  shape: BoxShape.circle,
-                  boxShadow: PremiumShadows.primaryGlow,
-                ),
-                child: const Icon(
-                  Icons.code_rounded,
-                  size: 48,
-                  color: Colors.white,
-                ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 20),
-              Text(
-                'Mehedi',
-                style: PremiumTypography.h2.copyWith(
-                  color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'App Developer & Esports Platform',
-                style: PremiumTypography.body.copyWith(
-                  color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              const _PremiumContactTile(
-                icon: Icons.telegram_rounded,
-                label: 'Telegram',
-                value: '@mehedi',
-                url: 'https://t.me/mehedi',
-              ),
-              const SizedBox(height: 12),
-              const _PremiumContactTile(
-                icon: Icons.mail_outline_rounded,
-                label: 'Email',
-                value: 'mehedi@squadup.gg',
-                url: 'mailto:mehedi@squadup.gg',
-              ),
-              const SizedBox(height: 12),
-              const _PremiumContactTile(
-                icon: Icons.public_rounded,
-                label: 'Website',
-                value: 'squadup.gg',
-                url: 'https://squadup.gg',
-              ),
-              const SizedBox(height: 32),
-              Text(
-                '${AppConstants.appName} v${AppConstants.appVersion}',
-                style: PremiumTypography.caption.copyWith(
-                  color: isDark ? PremiumColors.darkTextTertiary : PremiumColors.lightTextTertiary,
-                ),
-              ),
-            ],
-          ),
+              child: const Icon(Icons.code, size: 44, color: AppColors.primary),
+            ),
+            const SizedBox(height: 13),
+            const Text('Mehedi', style: AppTextStyles.h2),
+            const SizedBox(height: 6),
+            const Text('App Developer & Esports Platform',
+                style: AppTextStyles.body2),
+            const SizedBox(height: 18),
+            // Tappable contact links — replace the URLs with the real handles.
+            const _ContactTile(
+              icon: Icons.telegram,
+              label: 'Telegram',
+              value: '@mehedi',
+              url: 'https://t.me/mehedi',
+            ),
+            const SizedBox(height: 12),
+            const _ContactTile(
+              icon: Icons.mail_outline_rounded,
+              label: 'Email',
+              value: 'mehedi@squadup.gg',
+              url: 'mailto:mehedi@squadup.gg',
+            ),
+            const SizedBox(height: 12),
+            const _ContactTile(
+              icon: Icons.public,
+              label: 'Website',
+              value: 'squadup.gg',
+              url: 'https://squadup.gg',
+            ),
+            const SizedBox(height: 18),
+            Text('${AppConstants.appName} v${AppConstants.appVersion}',
+                style: AppTextStyles.body2.copyWith(color: context.cTextMuted)),
+          ],
         ),
       ),
     );
   }
 }
 
-class _PremiumContactTile extends StatelessWidget {
+class _ContactTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
   final String url;
-  
-  const _PremiumContactTile({
+  const _ContactTile({
     required this.icon,
     required this.label,
     required this.value,
@@ -168,7 +109,7 @@ class _PremiumContactTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 400),
+      constraints: const BoxConstraints(maxWidth: 360),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: ListNavTile(

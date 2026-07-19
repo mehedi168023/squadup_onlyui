@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
+import '../../app/core/app_toast.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import '../../app/core/app_toast.dart';
 import '../../app/core/app_constants.dart';
 import '../../app/core/validators.dart';
 import '../../app/data/mock/mock_data.dart';
 import '../../app/routes/app_routes.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../design_system/components/inputs/premium_text_field.dart';
-import '../../app/widgets/premium_back_button.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
 import '../../app/widgets/payment_channel_field.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
 
 class DepositScreen extends StatefulWidget {
@@ -36,262 +33,158 @@ class _DepositScreenState extends State<DepositScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text(
-          'Add Money',
-          style: PremiumTypography.h3.copyWith(
-            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-          ),
-        ),
-      ),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Add Money')),
       body: ResponsiveCenter(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            PremiumSpacing.screenHorizontal,
-            PremiumSpacing.md,
-            PremiumSpacing.screenHorizontal,
-            24,
-          ),
+          padding: const EdgeInsets.all(12),
           children: [
-            _buildHeaderCard(context, isDark),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, isDark, 'PAYMENT METHOD'),
-            const SizedBox(height: 16),
-            _buildPaymentMethodDropdown(context, isDark),
-            const SizedBox(height: 24),
-            _buildSectionHeader(context, isDark, 'ENTER AMOUNT'),
-            const SizedBox(height: 16),
-            PremiumTextField(
+            AppCard(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.success.withValues(alpha: 0.25),
+                  context.cSurface
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.account_balance_wallet,
+                        color: AppColors.winningTeal),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Add Money',
+                            style: AppTextStyles.title.copyWith(fontSize: 18)),
+                        const SizedBox(height: 2),
+                        const Text('Secure payment via gateway',
+                            style: AppTextStyles.body2),
+                      ],
+                    ),
+                  ),
+                  const StatusPill(
+                      text: 'Active',
+                      color: AppColors.winningTeal,
+                      showDot: false),
+                ],
+              ),
+            ),
+            const SizedBox(height: 15),
+            const SectionHeader('PAYMENT METHOD'),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int>(
+              initialValue: _channel,
+              isExpanded: true,
+              borderRadius: BorderRadius.circular(14),
+              dropdownColor: context.cSurface,
+              icon: Icon(Icons.keyboard_arrow_down_rounded,
+                  color: context.cTextDim),
+              decoration: const InputDecoration(
+                  labelText: 'Select payment method'),
+              selectedItemBuilder: (context) => [
+                for (final ch in MockData.depositChannels)
+                  PaymentChannelRow(channel: ch),
+              ],
+              items: [
+                for (int i = 0; i < MockData.depositChannels.length; i++)
+                  DropdownMenuItem<int>(
+                    value: i,
+                    child: PaymentChannelRow(
+                        channel: MockData.depositChannels[i]),
+                  ),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _channel = v);
+              },
+            ),
+            const SizedBox(height: 15),
+            const SectionHeader('ENTER AMOUNT'),
+            const SizedBox(height: 12),
+            TextField(
               controller: amount,
-              hint: 'Enter amount',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textInputAction: TextInputAction.done,
-              prefixIcon: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 8),
-                child: Text(
-                  AppConstants.currency,
-                  style: PremiumTypography.h5.copyWith(
-                    color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildContinueButton(context, isDark),
-            const SizedBox(height: 24),
-            _buildInfoCard(context, isDark),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderCard(BuildContext context, bool isDark) {
-    return Container(
-      padding: PremiumSpacing.card,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            PremiumColors.success.withOpacity(0.15),
-            (isDark ? PremiumColors.darkCard : PremiumColors.lightCard).withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(PremiumRadius.card),
-        border: Border.all(
-          color: PremiumColors.success.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: PremiumColors.success.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.account_balance_wallet_rounded,
-              color: PremiumColors.winning,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Add Money',
-                  style: PremiumTypography.h5.copyWith(
-                    color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Secure payment via gateway',
-                  style: PremiumTypography.caption.copyWith(
-                    color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-                  ),
-                ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: PremiumColors.winning.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Active',
-              style: PremiumTypography.labelSmall.copyWith(
-                color: PremiumColors.winning,
-                fontWeight: FontWeight.w700,
+              style: AppTextStyles.body1,
+              decoration: const InputDecoration(
+                labelText: 'Amount',
+                prefixIcon: Padding(
+                  padding: EdgeInsets.only(left: 16, right: 8),
+                  child: Text(AppConstants.currency,
+                      style: TextStyle(
+                          fontSize: 20, color: AppColors.textSecondary)),
+                ),
+                prefixIconConstraints: BoxConstraints(minWidth: 0),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, bool isDark, String title) {
-    return Text(
-      title,
-      style: PremiumTypography.labelLarge.copyWith(
-        color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-        letterSpacing: 1.2,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-
-  Widget _buildPaymentMethodDropdown(BuildContext context, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? PremiumColors.darkSurface2 : PremiumColors.lightSurface1,
-        borderRadius: BorderRadius.circular(PremiumRadius.input),
-        border: Border.all(
-          color: isDark ? PremiumColors.darkBorder : PremiumColors.lightBorder,
-        ),
-      ),
-      child: DropdownButtonFormField<int>(
-        value: _channel,
-        isExpanded: true,
-        borderRadius: BorderRadius.circular(14),
-        dropdownColor: isDark ? PremiumColors.darkCardElevated : PremiumColors.lightCard,
-        icon: Icon(
-          Icons.keyboard_arrow_down_rounded,
-          color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-        ),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-        ),
-        selectedItemBuilder: (context) => [
-          for (final ch in MockData.depositChannels)
-            PaymentChannelRow(channel: ch),
-        ],
-        items: [
-          for (int i = 0; i < MockData.depositChannels.length; i++)
-            DropdownMenuItem<int>(
-              value: i,
-              child: PaymentChannelRow(channel: MockData.depositChannels[i]),
+            const SizedBox(height: 15),
+            Builder(builder: (context) {
+              final ch = MockData.depositChannels[_channel];
+              final isGateway = ch.key == 'gateway';
+              return PrimaryButton(
+                label: isGateway ? 'PROCEED TO PAYMENT' : 'CONTINUE',
+                icon: isGateway
+                    ? Icons.lock_outline
+                    : Icons.arrow_forward_rounded,
+                variant: ButtonVariant.green,
+                onPressed: () {
+                  final v = double.tryParse(amount.text.trim());
+                  if (isGateway) {
+                    final err = Validators.amount(amount.text);
+                    if (err != null) {
+                      AppToast.error(err);
+                      return;
+                    }
+                    Get.toNamed(AppRoutes.depositWebview, arguments: v);
+                  } else {
+                    // Manual: amount is finalised with the TRX on the next
+                    // screen — pass whatever's typed as a prefill.
+                    Get.toNamed(AppRoutes.manualDeposit,
+                        arguments: {'channel': ch, 'amount': v});
+                  }
+                },
+              );
+            }),
+            const SizedBox(height: 15),
+            AppCard(
+              child: Column(
+                children: [
+                  _info(Icons.verified, AppColors.primary,
+                      'Secure payment powered by our gateway'),
+                  const SizedBox(height: 14),
+                  _info(Icons.bolt, AppColors.gold,
+                      'Balance is credited instantly after payment'),
+                  const SizedBox(height: 14),
+                  _info(Icons.headset_mic, AppColors.winningTeal,
+                      'Contact support if payment is not reflected'),
+                ],
+              ),
             ),
-        ],
-        onChanged: (v) {
-          if (v != null) setState(() => _channel = v);
-        },
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildContinueButton(BuildContext context, bool isDark) {
-    final ch = MockData.depositChannels[_channel];
-    final isGateway = ch.key == 'gateway';
-    
-    return PremiumButton.primary(
-      text: isGateway ? 'PROCEED TO PAYMENT' : 'CONTINUE',
-      icon: Icon(isGateway ? Icons.lock_rounded : Icons.arrow_forward_rounded),
-      onPressed: () {
-        final v = double.tryParse(amount.text.trim());
-        if (isGateway) {
-          final err = Validators.amount(amount.text);
-          if (err != null) {
-            AppToast.error(err);
-            return;
-          }
-          Get.toNamed(AppRoutes.depositWebview, arguments: v);
-        } else {
-          Get.toNamed(AppRoutes.manualDeposit,
-              arguments: {'channel': ch, 'amount': v});
-        }
-      },
-      isFullWidth: true,
-      customColor: PremiumColors.winning,
-    );
-  }
-
-  Widget _buildInfoCard(BuildContext context, bool isDark) {
-    return PremiumCard(
-      padding: PremiumSpacing.card,
-      child: Column(
-        children: [
-          _buildInfoRow(
-            context,
-            isDark,
-            Icons.verified_rounded,
-            PremiumColors.primary,
-            'Secure payment powered by our gateway',
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            context,
-            isDark,
-            Icons.bolt_rounded,
-            PremiumColors.gold,
-            'Balance is credited instantly after payment',
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            context,
-            isDark,
-            Icons.headset_mic_rounded,
-            PremiumColors.winning,
-            'Contact support if payment is not reflected',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(
-    BuildContext context,
-    bool isDark,
-    IconData icon,
-    Color color,
-    String text,
-  ) {
+  Widget _info(IconData icon, Color color, String text) {
     return Row(
       children: [
         Icon(icon, color: color, size: 20),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            text,
-            style: PremiumTypography.body.copyWith(
-              color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-            ),
-          ),
-        ),
+            child: Text(text,
+                style: AppTextStyles.body1.copyWith(color: context.cTextDim))),
       ],
     );
   }

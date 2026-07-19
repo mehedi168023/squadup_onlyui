@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/widgets/premium_back_button.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../app/core/app_constants.dart';
@@ -8,16 +9,18 @@ import '../../app/data/mock/mock_data.dart';
 import '../../app/data/models/misc_models.dart';
 import '../../app/data/services/bd_location_api.dart';
 import '../../app/data/services/session_service.dart';
-import '../../design_system/tokens/premium_colors.dart';
-import '../../design_system/tokens/premium_typography.dart';
-import '../../design_system/tokens/premium_spacing.dart';
-import '../../design_system/tokens/premium_radius.dart';
-import '../../design_system/components/cards/premium_card.dart';
-import '../../design_system/components/buttons/premium_button.dart';
-import '../../app/widgets/premium_back_button.dart';
-import '../../design_system/tokens/premium_shadows.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_text_styles.dart';
+import '../../app/widgets/common_widgets.dart';
+import '../../app/widgets/primary_button.dart';
 import '../../app/widgets/responsive.dart';
+import '../../app/widgets/skeleton.dart';
 
+/// Premium gaming-store checkout: pick quantity + colour, choose a delivery
+/// division, enter the full address and phone, then place the order. The price
+/// total (items × qty + courier charge) updates live and rides in a sticky
+/// bottom bar.
 class ProductBuyScreen extends StatefulWidget {
   const ProductBuyScreen({super.key});
 
@@ -30,6 +33,7 @@ class _ProductBuyScreenState extends State<ProductBuyScreen> {
   late String _color = product.colors.first;
   int _qty = 1;
 
+  // Division/district loaded live from the free BD geo API.
   List<BdDivision> _divisions = [];
   BdDivision? _division;
   List<BdDistrict> _districts = [];
@@ -43,7 +47,11 @@ class _ProductBuyScreenState extends State<ProductBuyScreen> {
   bool _placing = false;
 
   double get _subtotal => product.price * _qty;
-  double get _delivery => _division == null ? 0 : (_division!.name == 'Dhaka' ? MockData.deliveryInsideDhaka : MockData.deliveryOutsideDhaka);
+  double get _delivery => _division == null
+      ? 0
+      : (_division!.name == 'Dhaka'
+          ? MockData.deliveryInsideDhaka
+          : MockData.deliveryOutsideDhaka);
   double get _total => _subtotal + _delivery;
 
   @override
@@ -60,24 +68,40 @@ class _ProductBuyScreenState extends State<ProductBuyScreen> {
   }
 
   Future<void> _loadDivisions() async {
-    setState(() { _loadingDiv = true; _divError = false; });
+    setState(() {
+      _loadingDiv = true;
+      _divError = false;
+    });
     try {
       final list = await BdLocationApi.divisions();
       if (!mounted) return;
-      setState(() { _divisions = list; _loadingDiv = false; });
+      setState(() {
+        _divisions = list;
+        _loadingDiv = false;
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _loadingDiv = false; _divError = true; });
+      setState(() {
+        _loadingDiv = false;
+        _divError = true;
+      });
       AppToast.error('Could not load divisions — tap retry');
     }
   }
 
   Future<void> _loadDistricts(String divisionId) async {
-    setState(() { _loadingDist = true; _districts = []; _district = null; });
+    setState(() {
+      _loadingDist = true;
+      _districts = [];
+      _district = null;
+    });
     try {
       final list = await BdLocationApi.districts(divisionId);
       if (!mounted) return;
-      setState(() { _districts = list; _loadingDist = false; });
+      setState(() {
+        _districts = list;
+        _loadingDist = false;
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingDist = false);
@@ -86,105 +110,245 @@ class _ProductBuyScreenState extends State<ProductBuyScreen> {
   }
 
   Future<void> _placeOrder() async {
-    if (_division == null) { AppToast.warning('Select your delivery division'); return; }
-    if (_district == null) { AppToast.warning('Select your district'); return; }
-    if (_address.text.trim().length < 6) { AppToast.warning('Enter your full delivery address'); return; }
+    if (_division == null) {
+      AppToast.warning('Select your delivery division');
+      return;
+    }
+    if (_district == null) {
+      AppToast.warning('Select your district');
+      return;
+    }
+    if (_address.text.trim().length < 6) {
+      AppToast.warning('Enter your full delivery address');
+      return;
+    }
     final phone = _phone.text.trim();
     final phoneErr = Validators.phone(phone);
-    if (phoneErr != null) { AppToast.error(phoneErr); return; }
+    if (phoneErr != null) {
+      AppToast.error(phoneErr);
+      return;
+    }
     setState(() => _placing = true);
     final ok = await SessionService.to.submitProductOrder({
-      'productName': product.name, 'qty': _qty, 'color': _color,
-      'unitPrice': product.price, 'subtotal': _subtotal,
-      'deliveryCharge': _delivery, 'total': _total,
-      'divisionId': _division!.id, 'divisionName': _division!.name,
-      'districtId': _district!.id, 'districtName': _district!.name,
-      'address': _address.text.trim(), 'phone': phone, 'paymentMethod': 'cod',
+      'productName': product.name,
+      'qty': _qty,
+      'color': _color,
+      'unitPrice': product.price,
+      'subtotal': _subtotal,
+      'deliveryCharge': _delivery,
+      'total': _total,
+      'divisionId': _division!.id,
+      'divisionName': _division!.name,
+      'districtId': _district!.id,
+      'districtName': _district!.name,
+      'address': _address.text.trim(),
+      'phone': phone,
+      'paymentMethod': 'cod',
     });
     if (!mounted) return;
     setState(() => _placing = false);
     if (!ok) return;
     final orderId = SessionService.to.orders.first.id;
     Get.back();
-    AppToast.success('Order #$orderId placed! $_qty× ${product.name} • ${taka(_total)}');
+    AppToast.success(
+        'Order #$orderId placed! $_qty× ${product.name} • ${taka(_total)}');
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
-      appBar: AppBar(
-        leading: const PremiumBackButton(),
-        title: Text('Checkout', style: PremiumTypography.h3.copyWith(
-          color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
-        )),
-      ),
-      bottomNavigationBar: _buildBottomBar(context, isDark),
+      appBar: AppBar(leading: const PremiumBackButton(), title: const Text('Checkout')),
+      bottomNavigationBar:
+          _BottomBar(total: _total, loading: _placing, onPlace: _placeOrder),
       body: ResponsiveCenter(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(14, 14, 14, 24),
+          padding: const EdgeInsets.all(14),
           children: [
-            _buildProductSummary(context, isDark),
-            const SizedBox(height: 24),
-            _buildSectionHeader(isDark, 'QUANTITY'),
-            const SizedBox(height: 16),
-            _buildQuantityRow(isDark),
+            _ProductSummary(product: product),
+            const SizedBox(height: AppSpacing.xl),
+            const SectionHeader('QUANTITY'),
+            const SizedBox(height: AppSpacing.md),
+            _QuantityRow(
+              qty: _qty,
+              onMinus: () => setState(() => _qty = (_qty - 1).clamp(1, 99)),
+              onPlus: () => setState(() => _qty = (_qty + 1).clamp(1, 99)),
+            ),
             if (product.colors.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              _buildSectionHeader(isDark, 'SELECT COLOR'),
-              const SizedBox(height: 16),
-              _buildColorPicker(isDark),
+              const SizedBox(height: AppSpacing.xl),
+              const SectionHeader('SELECT COLOR'),
+              const SizedBox(height: AppSpacing.md),
+              _ColorPicker(
+                colors: product.colors,
+                selected: _color,
+                onSelect: (c) => setState(() => _color = c),
+              ),
             ],
-            const SizedBox(height: 24),
-            _buildSectionHeader(isDark, 'DELIVERY AREA'),
-            const SizedBox(height: 16),
-            _buildDivisionDropdown(context, isDark),
-            const SizedBox(height: 12),
-            _buildDistrictDropdown(context, isDark),
-            const SizedBox(height: 24),
-            _buildSectionHeader(isDark, 'FULL ADDRESS'),
-            const SizedBox(height: 16),
-            _buildField(context, isDark, _address, 'House / road / area, city, post code…', Icons.location_on_outlined, maxLines: 3),
-            const SizedBox(height: 24),
-            _buildSectionHeader(isDark, 'PHONE NUMBER'),
-            const SizedBox(height: 16),
-            _buildField(context, isDark, _phone, '01XXXXXXXXX', Icons.phone_outlined, inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(11),
-            ]),
-            const SizedBox(height: 24),
-            _buildOrderSummary(isDark),
+            const SizedBox(height: AppSpacing.xl),
+            const SectionHeader('DELIVERY AREA'),
+            const SizedBox(height: AppSpacing.md),
+            _DivisionDropdown(
+              divisions: _divisions,
+              value: _division,
+              loading: _loadingDiv,
+              error: _divError,
+              onRetry: _loadDivisions,
+              onChanged: (d) {
+                setState(() => _division = d);
+                if (d != null) _loadDistricts(d.id);
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _DistrictDropdown(
+              // Re-create the field per division so its internal value never
+              // lingers from a previously-selected division's district list.
+              key: ValueKey('dist-${_division?.id}'),
+              districts: _districts,
+              value: _district,
+              loading: _loadingDist,
+              enabled: _division != null,
+              onChanged: (d) => setState(() => _district = d),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            const SectionHeader('FULL ADDRESS'),
+            const SizedBox(height: AppSpacing.md),
+            _Field(
+              controller: _address,
+              hint: 'House / road / area, city, post code…',
+              icon: Icons.location_on_outlined,
+              maxLines: 3,
+              keyboardType: TextInputType.streetAddress,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            const SectionHeader('PHONE NUMBER'),
+            const SizedBox(height: AppSpacing.md),
+            _Field(
+              controller: _phone,
+              hint: '01XXXXXXXXX',
+              icon: Icons.phone_outlined,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(11),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            _OrderSummary(
+              qty: _qty,
+              subtotal: _subtotal,
+              delivery: _delivery,
+              total: _total,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Icon(Icons.local_shipping_outlined,
+                    size: 15, color: context.cTextMuted),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Cash on Delivery · ${taka(MockData.deliveryInsideDhaka)} inside Dhaka, '
+                    '${taka(MockData.deliveryOutsideDhaka)} outside.',
+                    style:
+                        AppTextStyles.body2.copyWith(color: context.cTextMuted),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
-  Widget _buildProductSummary(BuildContext context, bool isDark) {
-    return PremiumCard(
-      padding: PremiumSpacing.card,
+}
+
+// ── Building blocks ───────────────────────────────────────────────────────
+
+BoxDecoration _cardDeco(BuildContext context) => BoxDecoration(
+      color: context.cSurface,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      border: Border.all(color: context.cBorder),
+    );
+
+/// Maps a colour name to a display swatch.
+Color _swatch(String name) {
+  switch (name.toLowerCase()) {
+    case 'black':
+      return const Color(0xFF2A2A2A);
+    case 'white':
+      return const Color(0xFFE6E8EC);
+    case 'red':
+      return AppColors.danger;
+    case 'blue':
+      return AppColors.primary;
+    case 'green':
+      return AppColors.matchesGreen;
+    case 'gold':
+      return AppColors.gold;
+    default:
+      return AppColors.primary;
+  }
+}
+
+class _ProductSummary extends StatelessWidget {
+  final Product product;
+  const _ProductSummary({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasOld =
+        product.oldPrice != null && product.oldPrice! > product.price;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: _cardDeco(context),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 72, height: 72,
-            decoration: BoxDecoration(
-              color: PremiumColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(PremiumRadius.md),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Container(
+              width: 90,
+              height: 90,
+              color: AppColors.primary.withValues(alpha: 0.08),
+              child: product.image != null
+                  ? Image.asset(product.image!,
+                      fit: BoxFit.cover,
+                      cacheWidth: 260,
+                      errorBuilder: (_, __, ___) => Icon(product.icon,
+                          size: 40, color: AppColors.primary))
+                  : Icon(product.icon, size: 40, color: AppColors.primary),
             ),
-            child: product.image != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(PremiumRadius.md),
-                    child: Image.asset(product.image!, fit: BoxFit.cover, cacheWidth: 200))
-                : Icon(product.icon, size: 32, color: PremiumColors.primary),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name, style: PremiumTypography.h5.copyWith(color: context.text)),
+                Text(product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.title.copyWith(fontSize: 15)),
                 const SizedBox(height: 6),
-                Text(taka(product.price), style: PremiumTypography.currencySmall.copyWith(color: PremiumColors.winning)),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(taka(product.price),
+                        style: AppTextStyles.h2.copyWith(
+                            fontSize: 19, color: AppColors.matchesGreen)),
+                    const SizedBox(width: 8),
+                    if (hasOld)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(taka(product.oldPrice!),
+                            style: AppTextStyles.body2.copyWith(
+                              color: context.cTextMuted,
+                              decoration: TextDecoration.lineThrough,
+                            )),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const StatusPill(
+                    text: 'In Stock', color: AppColors.matchesGreen),
               ],
             ),
           ),
@@ -192,200 +356,406 @@ class _ProductBuyScreenState extends State<ProductBuyScreen> {
       ),
     );
   }
+}
 
-  Widget _buildSectionHeader(bool isDark, String title) {
-    return Text(title, style: PremiumTypography.labelLarge.copyWith(
-      color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary,
-      letterSpacing: 1.2, fontWeight: FontWeight.w700,
-    ));
-  }
+class _QuantityRow extends StatelessWidget {
+  final int qty;
+  final VoidCallback onMinus;
+  final VoidCallback onPlus;
+  const _QuantityRow(
+      {required this.qty, required this.onMinus, required this.onPlus});
 
-  Widget _buildQuantityRow(bool isDark) {
-    return PremiumCard(
-      padding: PremiumSpacing.card,
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: _cardDeco(context),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Quantity', style: PremiumTypography.bodyMedium.copyWith(color: context.text)),
-          Row(
-            children: [
-              PremiumIconButton(icon: Icons.remove_rounded, onPressed: () => setState(() => _qty = (_qty - 1).clamp(1, 99)), size: 44),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text('$_qty', style: PremiumTypography.h4.copyWith(color: context.text)),
-              ),
-              PremiumIconButton(icon: Icons.add_rounded, onPressed: () => setState(() => _qty = (_qty + 1).clamp(1, 99)), size: 44),
-            ],
+          _StepBtn(icon: Icons.remove_rounded, onTap: onMinus),
+          Expanded(
+            child: Text('$qty',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.h2.copyWith(fontSize: 18)),
           ),
+          _StepBtn(icon: Icons.add_rounded, onTap: onPlus),
         ],
       ),
     );
   }
+}
 
-  Widget _buildColorPicker(bool isDark) {
-    return PremiumCard(
-      padding: PremiumSpacing.card,
-      child: Wrap(
-        spacing: 12, runSpacing: 12,
-        children: product.colors.map((c) {
-          final active = _color == c;
-          return GestureDetector(
-            onTap: () => setState(() => _color = c),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 52, height: 52,
-              decoration: BoxDecoration(
-                color: _parseColor(c),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: active ? PremiumColors.primary : Colors.transparent, width: 3),
-                boxShadow: active ? PremiumShadows.primaryGlow : null,
+class _StepBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _StepBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 46,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+        ),
+        child: Icon(icon, color: AppColors.primary, size: 22),
+      ),
+    );
+  }
+}
+
+class _ColorPicker extends StatelessWidget {
+  final List<String> colors;
+  final String selected;
+  final ValueChanged<String> onSelect;
+  const _ColorPicker(
+      {required this.colors, required this.selected, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: colors.map((c) {
+        final sel = c == selected;
+        return GestureDetector(
+          onTap: () => onSelect(c),
+          child: AnimatedContainer(
+            duration: AppDurations.fast,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: sel
+                  ? AppColors.primary.withValues(alpha: 0.14)
+                  : context.cSurface,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(
+                color: sel ? AppColors.primary : context.cBorder,
+                width: sel ? 1.5 : 1,
               ),
             ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Color _parseColor(String hex) {
-    try { return Color(int.parse(hex.replaceFirst('#', '0xFF'))); }
-    catch (_) { return PremiumColors.primary; }
-  }
-
-  Widget _buildDivisionDropdown(BuildContext context, bool isDark) {
-    return _buildDropdown(
-      context, isDark, 'Select Division', _division?.name,
-      Icons.location_on_rounded, _loadingDiv, _divError,
-      _loadDivisions, _divisions.map((d) => d.name).toList(),
-      (i) => setState(() {
-        _division = _divisions[i];
-        if (_division != null) _loadDistricts(_division!.id);
-      }),
-    );
-  }
-
-  Widget _buildDistrictDropdown(BuildContext context, bool isDark) {
-    return _buildDropdown(
-      context, isDark, 'Select District', _district?.name,
-      Icons.map_rounded, _loadingDist, false,
-      () {}, _districts.map((d) => d.name).toList(),
-      (i) => setState(() => _district = _districts[i]),
-      enabled: _division != null,
-    );
-  }
-
-  Widget _buildDropdown(
-    BuildContext context, bool isDark, String label, String? selected,
-    IconData icon, bool loading, bool error, VoidCallback onRetry,
-    List<String> items, ValueChanged<int> onChanged, {bool enabled = true}
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: enabled ? (isDark ? PremiumColors.darkCard : PremiumColors.lightCard) : context.surface2,
-        borderRadius: BorderRadius.circular(PremiumRadius.input),
-        border: Border.all(color: context.border),
-      ),
-      child: loading
-          ? const Padding(padding: EdgeInsets.all(12), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
-          : error
-              ? GestureDetector(
-                  onTap: onRetry,
-                  child: Padding(padding: const EdgeInsets.all(12), child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: PremiumColors.danger, size: 20),
-                      const SizedBox(width: 8),
-                      Text('Tap to retry', style: PremiumTypography.body.copyWith(color: PremiumColors.danger)),
-                    ],
-                  )),
-                )
-              : DropdownButtonFormField<int>(
-                  value: items.isNotEmpty ? 0 : null,
-                  isExpanded: true,
-                  borderRadius: BorderRadius.circular(14),
-                  dropdownColor: isDark ? PremiumColors.darkCardElevated : PremiumColors.lightCard,
-                  icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.textTertiary),
-                  decoration: const InputDecoration(border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none),
-                  hint: Row(children: [
-                    Icon(icon, size: 20, color: context.textSecondary),
-                    const SizedBox(width: 8),
-                    Text(label, style: PremiumTypography.body.copyWith(color: context.textSecondary)),
-                  ]),
-                  items: List.generate(items.length, (i) => DropdownMenuItem<int>(value: i, child: Text(items[i]))),
-                  onChanged: enabled ? (v) { if (v != null) onChanged(v); } : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: _swatch(c),
+                    shape: BoxShape.circle,
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.45)),
+                  ),
                 ),
+                const SizedBox(width: 8),
+                Text(c,
+                    style: AppTextStyles.title.copyWith(
+                        fontSize: 13,
+                        color: sel ? context.cText : context.cTextDim)),
+                if (sel) ...[
+                  const SizedBox(width: 6),
+                  const Icon(Icons.check_circle_rounded,
+                      size: 16, color: AppColors.primary),
+                ],
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
+}
 
-  Widget _buildField(BuildContext context, bool isDark, TextEditingController controller, String hint, IconData icon, {int maxLines = 1, List<TextInputFormatter>? inputFormatters}) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? PremiumColors.darkCard : PremiumColors.lightCard,
-        borderRadius: BorderRadius.circular(PremiumRadius.input),
-        border: Border.all(color: context.border),
+/// Division dropdown — populated live from the BD geo API. Shows a spinner while
+/// loading and a retry row if the request fails.
+class _DivisionDropdown extends StatelessWidget {
+  final List<BdDivision> divisions;
+  final BdDivision? value;
+  final bool loading;
+  final bool error;
+  final VoidCallback onRetry;
+  final ValueChanged<BdDivision?> onChanged;
+  const _DivisionDropdown({
+    required this.divisions,
+    required this.value,
+    required this.loading,
+    required this.error,
+    required this.onRetry,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Smoothly cross-fade between the error/retry row and the live dropdown as
+    // the real async division load resolves or fails — no hard flicker.
+    return CrossFade(
+      showFirst: error,
+      first: _RetryRow(label: 'Failed to load divisions', onRetry: onRetry),
+      second: DropdownButtonFormField<BdDivision>(
+      initialValue: value,
+      isExpanded: true,
+      dropdownColor: context.cSurface,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      icon: loading
+          ? const _MiniSpinner()
+          : const Icon(Icons.keyboard_arrow_down_rounded),
+      style: AppTextStyles.body1.copyWith(color: context.cText, fontSize: 15),
+      decoration: InputDecoration(
+        hintText: loading ? 'Loading divisions…' : 'Select division',
+        prefixIcon: const Icon(Icons.map_outlined),
+        fillColor: context.cSurface,
       ),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        inputFormatters: inputFormatters,
-        style: PremiumTypography.body.copyWith(color: context.text),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: PremiumTypography.body.copyWith(color: context.textTertiary),
-          border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
-          prefixIcon: Padding(padding: const EdgeInsets.only(left: 16), child: Icon(icon)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      items: divisions
+          .map((d) => DropdownMenuItem(
+                value: d,
+                child: Text('${d.name}  •  ${d.bnName}',
+                    overflow: TextOverflow.ellipsis),
+              ))
+          .toList(),
+      onChanged: (loading || divisions.isEmpty) ? null : onChanged,
+      ),
+    );
+  }
+}
+
+/// District dropdown — cascades from the selected division. Disabled until a
+/// division is chosen.
+class _DistrictDropdown extends StatelessWidget {
+  final List<BdDistrict> districts;
+  final BdDistrict? value;
+  final bool loading;
+  final bool enabled;
+  final ValueChanged<BdDistrict?> onChanged;
+  const _DistrictDropdown({
+    super.key,
+    required this.districts,
+    required this.value,
+    required this.loading,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hint = !enabled
+        ? 'Select a division first'
+        : (loading ? 'Loading districts…' : 'Select district');
+    return DropdownButtonFormField<BdDistrict>(
+      initialValue: value,
+      isExpanded: true,
+      dropdownColor: context.cSurface,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      icon: loading
+          ? const _MiniSpinner()
+          : const Icon(Icons.keyboard_arrow_down_rounded),
+      style: AppTextStyles.body1.copyWith(color: context.cText, fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: const Icon(Icons.location_city_outlined),
+        fillColor: context.cSurface,
+      ),
+      items: districts
+          .map((d) => DropdownMenuItem(
+                value: d,
+                child: Text('${d.name}  •  ${d.bnName}',
+                    overflow: TextOverflow.ellipsis),
+              ))
+          .toList(),
+      onChanged: (!enabled || loading || districts.isEmpty) ? null : onChanged,
+    );
+  }
+}
+
+/// A small inline spinner sized to sit in a field's trailing icon slot.
+class _MiniSpinner extends StatelessWidget {
+  const _MiniSpinner();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+        width: 18,
+        height: 18,
+        child:
+            CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+      );
+}
+
+/// Tappable error row offering a retry (shown if the divisions request fails).
+class _RetryRow extends StatelessWidget {
+  final String label;
+  final VoidCallback onRetry;
+  const _RetryRow({required this.label, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onRetry,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.danger.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud_off_rounded,
+                size: 18, color: AppColors.danger),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(label,
+                    style: AppTextStyles.body1.copyWith(color: context.cText))),
+            const Icon(Icons.refresh_rounded,
+                size: 18, color: AppColors.primary),
+            const SizedBox(width: 4),
+            Text('Retry',
+                style: AppTextStyles.title
+                    .copyWith(color: AppColors.primary, fontSize: 13)),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildOrderSummary(bool isDark) {
-    return PremiumCard(
-      padding: PremiumSpacing.card,
+class _Field extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final IconData icon;
+  final int maxLines;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  const _Field({
+    required this.controller,
+    required this.hint,
+    required this.icon,
+    this.maxLines = 1,
+    this.keyboardType,
+    this.inputFormatters,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      style: AppTextStyles.body1.copyWith(fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hint,
+        fillColor: context.cSurface,
+        alignLabelWithHint: true,
+        prefixIcon: Padding(
+          // Keep the icon at the top on the multi-line address field.
+          padding: EdgeInsets.only(bottom: maxLines > 1 ? 44 : 0),
+          child: Icon(icon),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrderSummary extends StatelessWidget {
+  final int qty;
+  final double subtotal;
+  final double delivery;
+  final double total;
+  const _OrderSummary({
+    required this.qty,
+    required this.subtotal,
+    required this.delivery,
+    required this.total,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDeco(context),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('ORDER SUMMARY', style: PremiumTypography.labelLarge.copyWith(
-            color: isDark ? PremiumColors.darkTextSecondary : PremiumColors.lightTextSecondary, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 16),
-          _buildSummaryRow('Subtotal ($_qty items)', taka(_subtotal)),
-          const SizedBox(height: 8),
-          _buildSummaryRow('Delivery', _delivery == 0 ? 'Calculated after selection' : taka(_delivery)),
-          Divider(height: 24, color: context.divider),
-          _buildSummaryRow('Total', taka(_total), isBold: true),
+          _row(context, 'Subtotal ($qty item${qty > 1 ? 's' : ''})',
+              taka(subtotal)),
+          const SizedBox(height: 10),
+          _row(context, 'Delivery charge',
+              delivery == 0 ? 'Select division' : taka(delivery),
+              dim: delivery == 0),
+          const SizedBox(height: 12),
+          Divider(height: 1, color: context.cBorder),
+          const SizedBox(height: 12),
+          _row(context, 'Total', taka(total), emphasize: true),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
+  Widget _row(BuildContext context, String label, String value,
+      {bool emphasize = false, bool dim = false}) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(child: Text(label, style: isBold ? PremiumTypography.bodyMedium.copyWith(color: context.text) : PremiumTypography.body.copyWith(color: context.textSecondary))),
-        Text(value, style: (isBold ? PremiumTypography.bodyMedium : PremiumTypography.body).copyWith(
-          color: isBold ? PremiumColors.winning : context.text, fontWeight: isBold ? FontWeight.w800 : FontWeight.w500)),
+        Text(label,
+            style: emphasize
+                ? AppTextStyles.title.copyWith(fontSize: 15)
+                : AppTextStyles.body1.copyWith(color: context.cTextDim)),
+        Text(value,
+            style: emphasize
+                ? AppTextStyles.h2
+                    .copyWith(fontSize: 18, color: AppColors.matchesGreen)
+                : AppTextStyles.title.copyWith(
+                    fontSize: 13.5,
+                    color: dim ? context.cTextMuted : context.cText)),
       ],
     );
   }
+}
 
-  Widget _buildBottomBar(BuildContext context, bool isDark) {
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? PremiumColors.darkSurface1 : PremiumColors.lightCard,
-          border: Border(top: BorderSide(color: context.divider)),
-        ),
-        child: SafeArea(
-          child: PremiumButton.primary(
-            text: 'Place Order — ${taka(_total)}',
-            icon: const Icon(Icons.shopping_bag_rounded),
-            onPressed: _placing ? null : _placeOrder,
-            isLoading: _placing,
-            isFullWidth: true,
-            customColor: PremiumColors.winning,
+class _BottomBar extends StatelessWidget {
+  final double total;
+  final bool loading;
+  final VoidCallback onPlace;
+  const _BottomBar(
+      {required this.total, required this.loading, required this.onPlace});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.cSurface,
+        border: Border(top: BorderSide(color: context.cBorder)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          child: Row(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Total Payable',
+                      style: AppTextStyles.body2
+                          .copyWith(color: context.cTextDim)),
+                  const SizedBox(height: 2),
+                  Text(taka(total),
+                      style: AppTextStyles.h2.copyWith(fontSize: 20)),
+                ],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: PrimaryButton(
+                  label: 'Place Order',
+                  icon: Icons.shopping_bag_rounded,
+                  variant: ButtonVariant.green,
+                  loading: loading,
+                  onPressed: onPlace,
+                ),
+              ),
+            ],
           ),
         ),
       ),
