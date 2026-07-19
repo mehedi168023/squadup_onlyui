@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "776314651343",
+    "project_id": "squadup-51b9d",
+    "storage_bucket": "squadup-51b9d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:776314651343:android:5a607f5b1428bba8c12dba",
+        "android_client_info": {
+          "package_name": "nexus.SquadUp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfSBL2wGQNE_TMmoiZp8WU5WMNyRpwHuQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
